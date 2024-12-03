@@ -1,0 +1,19 @@
+<!-- home.html -->
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Question Answering</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'qa/styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="HomeHeader">Welcome to the Q&A Performance Analyser</h1>
+        <div class="HomeMidSection">
+            <button>
+                <a href="{% url 'upload_files' %}">Upload Files for Analysis </a>
+            </button>
+        </div>
+    </div>
+</body>
+</html>
