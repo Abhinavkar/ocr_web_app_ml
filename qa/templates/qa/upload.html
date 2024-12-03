@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Files</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'qa/styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Upload PDF and Image Files</h1>
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            <label for="pdf">Upload PDF:</label>
+            <input type="file" name="pdf" required><br><br>
+
+            <label for="question_image">Upload Question Image:</label>
+            <input type="file" name="question_image" required><br><br>
+
+            <label for="answer_image">Upload Answer Image:</label>
+            <input type="file" name="answer_image" required><br><br>
+
+            <button type="submit" id="submitButton">Submit</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function() {
+            var submitButton = document.getElementById('submitButton');
+            submitButton.innerHTML = 'Processing...';
+            submitButton.disabled = true;
+        });
+    </script>
+</body>
+</html>

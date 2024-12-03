@@ -1,0 +1,37 @@
+<!-- result.html -->
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Result</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'qa/styles.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="Header">Question Answering Result</h1>
+        
+        <div class="result-section">
+            <h2 class="result_heading">Best Matching Sentence:</h2>
+            <p>{{ result.best_match_sentence }}</p>
+        </div>
+        
+        <!-- <div class="result-section">
+            <h2 class="result_heading">Similarity Score:</h2>
+            <p>{{ result.best_match_score }}%</p>
+        </div> -->
+        
+        <div class="result-section">
+            <h2 class="result_heading">User Answer Similarity:</h2>
+            <p>{{ result.answer_similarity_score }}%</p>
+        </div>
+        
+        <div class="result-section">
+            <p>{{ result.answer_relevance }}</p>
+        </div>
+        
+        <div class="button-container">
+            <a href="{% url 'home' %}" class="buttonclass">Go Back to Home</a>
+        </div>
+    </div>
+</body>
+</html>
