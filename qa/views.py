@@ -23,7 +23,7 @@ def upload_files(request):
         question_image_full_path = fs.path(question_image_path)
         answer_image_full_path = fs.path(answer_image_path)
         result = process_uploaded_files(pdf_file_full_path, question_image_full_path, answer_image_full_path)
-
         return render(request, 'qa/result.html', {'result': result})
 
-    return render(request, 'qa/upload.html')
+    else:
+        return render(request, 'qa/upload.html')
