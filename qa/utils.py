@@ -4,6 +4,9 @@ import base64
 import pdfplumber
 import os
 from django.conf import settings 
+
+
+
 model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
 
 api_key = "353a19336b7e42fe5e8f4645074618f8a7a4e0eefcee7a5047f6d7c86a2b6e1f"
