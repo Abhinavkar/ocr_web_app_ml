@@ -1,19 +1,15 @@
 from django.shortcuts import render
-from .forms import DocumentForm, ImageForm
-from django.http import JsonResponse
-from .utils import extract_text_from_pdf, extract_text_from_image, ask_question
-from .models import Document, Image
 from django.core.files.storage import FileSystemStorage
+from django.contrib.auth.decorators import login_required
 
 # Your function for extracting PDF text and processing image logic should be in utils.py.
-
-def home(request):
-    return render(request, 'qa/home.html')
-
-from django.shortcuts import render
-from django.conf import settings
+\
 from .utils import process_uploaded_files
 from django.core.files.storage import FileSystemStorage
+
+@login_required
+def home(request):
+    return render(request, 'qa/home.html')
 
 def upload_files(request):
     if request.method == 'POST' and request.FILES['pdf'] and request.FILES['question_image'] and request.FILES['answer_image']:

@@ -8,26 +8,20 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="Header">Question Answering Result</h1>
+        <h1>Question Answering Result</h1>
         
+        {% for item in result %}
         <div class="result-section">
-            <h2 class="result_heading">Best Matching Sentence:</h2>
-            <p>{{ result.best_match_sentence }}</p>
+            <h2>{{ item.question_label }}</h2>
+            <h3>Best Matching Sentence:</h3>
+            <p>{{ item.result.best_match_sentence }}</p>
+            <h3>Similarity Score:</h3>
+            <p>{{ item.result.best_match_score }}%</p>
+            <h3>User Answer Similarity:</h3>
+            <p>{{ item.result.answer_similarity_score }}%</p>
+            <p>{{ item.result.answer_relevance }}</p>
         </div>
-        
-        <!-- <div class="result-section">
-            <h2 class="result_heading">Similarity Score:</h2>
-            <p>{{ result.best_match_score }}%</p>
-        </div> -->
-        
-        <div class="result-section">
-            <h2 class="result_heading">User Answer Similarity:</h2>
-            <p>{{ result.answer_similarity_score }}%</p>
-        </div>
-        
-        <div class="result-section">
-            <p>{{ result.answer_relevance }}</p>
-        </div>
+        {% endfor %}
         
         <div class="button-container">
             <a href="{% url 'home' %}" class="buttonclass">Go Back to Home</a>

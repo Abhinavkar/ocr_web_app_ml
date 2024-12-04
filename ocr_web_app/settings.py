@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'qa'
+    'qa',
+    'authentication'
 ]
 
 MIDDLEWARE = [
@@ -128,3 +129,5 @@ STATICFILES_DIRS = [
     BASE_DIR / "qa" / "static",
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+LOGIN_URL = '/auth/login/'  # Redirect unauthenticated users to the login page
+
