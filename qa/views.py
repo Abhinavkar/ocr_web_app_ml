@@ -11,6 +11,7 @@ from django.core.files.storage import FileSystemStorage
 def home(request):
     return render(request, 'qa/home.html')
 
+@login_required
 def upload_files(request):
     if request.method == 'POST' and request.FILES['pdf'] and request.FILES['question_image'] and request.FILES['answer_image']:
         fs = FileSystemStorage()
