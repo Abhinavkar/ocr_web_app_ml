@@ -1,15 +1,14 @@
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
-
-# Your function for extracting PDF text and processing image logic should be in utils.py.
-\
+from django.contrib.auth.decorators import login_required 
 from .utils import process_uploaded_files
 from django.core.files.storage import FileSystemStorage
 
-
+@login_required
 def home(request):
     return render(request, 'qa/home.html')
 
+@login_required
 def upload_files(request):
     if request.method == 'POST' and request.FILES['pdf'] and request.FILES['question_image'] and request.FILES['answer_image']:
         fs = FileSystemStorage()
