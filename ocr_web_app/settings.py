@@ -129,5 +129,5 @@ STATICFILES_DIRS = [
     BASE_DIR / "qa" / "static",
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-LOGIN_URL = '/auth/login/'  # Redirect unauthenticated users to the login page
+LOGIN_URL = '/auth/login/'  
 

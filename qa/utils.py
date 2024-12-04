@@ -6,11 +6,13 @@ from sentence_transformers import SentenceTransformer, util
 from together import Together
 import base64
 import pdfplumber
+import os
+import re
+from django.conf import settings
+
+model = SentenceTransformer('BAAI/bge-large-en-v1.5')
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-
-model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
-
 
 api_key = "353a19336b7e42fe5e8f4645074618f8a7a4e0eefcee7a5047f6d7c86a2b6e1f"
 client = Together(api_key=api_key)
@@ -104,7 +106,8 @@ def extract_questions_from_image(image_path):
 
     # Use regex to find numbered questions
     questions = re.findall(r'\d+\.\s+(.*?)(?=\d+\.\s|$)', extracted_text, re.DOTALL)
-    indexed_questions = {f"Question {i + 1}": question.strip() for i, question in enumerate(questions)}
+    indexed_questions = {f"Question {i + 1}": question.replace('\n', ' ').strip() for i, question in enumerate(questions)}
+    # print(indexed_questions)
 
     return indexed_questions
 
@@ -113,20 +116,12 @@ def extract_answers_from_image(image_path):
     """
     Extract answers from the uploaded image.
     """
-    ocr_prompt = (
-        "Analyze the given image to identify and extract all handwritten or printed answers. "
-        "Provide the output as plain text."
-    )
+    ocr_prompt = "Analyze the given image to identify and extract all handwritten text. I want only the answer in the output. If there are multiple answers , index each distinct point sequentially."
     extracted_text = extract_text_from_image(image_path, ocr_prompt)
-
-    if not extracted_text or "Error" in extracted_text:
-        print(f"OCR Failed for {image_path}. Extracted text: {extracted_text}")
-        return []  
-   
-    answers = extracted_text.split('\n')
-    print(f"Extracted Answers: {answers}")
-    return answers
-
+    answers = re.findall(r'\d+\.\s+(.*?)(?=\d+\.|$)', extracted_text, re.DOTALL)
+    indexed_answers = {f"Answer {i+1}": answer.replace('\n', ' ').strip() for i, answer in enumerate(answers)}
+    print(indexed_answers)
+    return indexed_answers
 
 
 def get_paragraph_embedding(paragraph):
@@ -138,27 +133,30 @@ def get_paragraph_embedding(paragraph):
     return sentences, sentence_embeddings
 
 def ask_question(paragraph, user_question, user_answer=None):
-    """
-    Find the best match for a question in the paragraph and evaluate an optional answer.
-    """
+    """Find the best matching sentence for the user's question and compare their answer."""
     user_question_embedding = model.encode(user_question, convert_to_tensor=True)
     sentences, sentence_embeddings = get_paragraph_embedding(paragraph)
 
-   
-    best_match_score, best_match_sentence = 0, ""
-    for sentence, sentence_embedding in zip(sentences, sentence_embeddings):
+    best_match_score = 0
+    best_match_sentence = ""
+    for i, sentence_embedding in enumerate(sentence_embeddings):
         similarity_score = util.cos_sim(user_question_embedding, sentence_embedding).item() * 100
         if similarity_score > best_match_score:
-            best_match_score, best_match_sentence = similarity_score, sentence
+            best_match_score = similarity_score
+            best_match_sentence = sentences[i]
 
-   
-    answer_relevance, answer_similarity_score = "No user answer provided for comparison.", 0
+    print(f"Best matching sentence: {best_match_sentence.strip()}")
+    print(f"Similarity score (question vs. sentence): {best_match_score:.2f}%")
+
+    answer_similarity_score = 0
+    answer_relevance = "No user answer provided for comparison."
     if user_answer:
         reference_embedding = model.encode(best_match_sentence, convert_to_tensor=True)
         user_answer_embedding = model.encode(user_answer, convert_to_tensor=True)
         answer_similarity_score = util.cos_sim(user_answer_embedding, reference_embedding).item() * 100
 
-        if answer_similarity_score > 70:
+        print(f"Similarity score (user answer vs. reference): {answer_similarity_score:.2f}%")
+        if answer_similarity_score > 65:
             answer_relevance = "Your answer is highly relevant!"
         else:
             answer_relevance = "Your answer does not closely match the reference answer."
@@ -170,33 +168,10 @@ def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path
     Process uploaded files (PDF and images) and return results for questions and answers.
     """
     paragraph = extract_text_from_pdf(pdf_file_path)
-    if not paragraph:
-        print("Error: No text extracted from the PDF.")
-        return []
-
-    paragraph = clean_text(paragraph)
-    print("Extracted Paragraph:", paragraph)
-
-    print("Extracting questions from the image...")
-    cleaned_paragraph = clean_text(paragraph)
-
     questions = extract_questions_from_image(question_image_path)
-    if not questions:
-        print("Error: No questions found in the image.")
-        return []
-
-    print("Extracted Questions:", questions)
-
-    print("Extracting answers from the image...")
+    print(questions)
     answers = extract_answers_from_image(answer_image_path)
-    if not answers:
-        print("Error: No answers found in the image.")
-        return []
-
-    print("Extracted Answers:", answers)
-
-
-    # Process each question and answer
+    print(answers)
     results = []
     for question_label, user_question in questions.items():
         answer_label = question_label.replace("Question", "Answer")

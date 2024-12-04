@@ -15,5 +15,11 @@
             </button>
         </div>
     </div>
+    <div class="logout-section">
+        <form method="POST" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit">Logout</button>
+        </form>
+    </div>
 </body>
 </html>
