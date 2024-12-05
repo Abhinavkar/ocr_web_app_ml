@@ -103,7 +103,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -131,8 +130,10 @@ STATICFILES_DIRS = [
     BASE_DIR / "qa" / "static",
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-LOGIN_URL = '/auth/login/'  # Redirect unauthenticated users to the login page
+LOGIN_URL = '/auth/login/'  
 
+
+from datetime import timedelta
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -146,4 +147,3 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
-
