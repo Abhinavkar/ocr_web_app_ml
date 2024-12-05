@@ -25,16 +25,21 @@ def register_user(request):
     return render(request, 'authentication/register.html')
 
 def login_user(request):
-    if request.method == 'POST':
+    if request.user.is_authenticated:  # Check if the user is already logged in
+        logout(request)  # Log out the user
+        return redirect('login')  # Redirect back to the login page
+
+    if request.method == 'POST':  # Handle POST request for login
         username = request.POST['username']
         password = request.POST['password']
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            login(request, user)
-            return redirect('home')  # Redirect to the QA app's home page
+            login(request, user)  # Log the user in
+            return redirect('home')  # Redirect to the home page
         else:
-            messages.error(request, "Invalid username or password.")
-    return render(request, 'authentication/login.html')
+            messages.error(request, "Invalid username or password.")  # Show error message
+    return render(request, 'authentication/login.html')  # Render the login page
+
 
 def logout_view(request):
     logout(request)

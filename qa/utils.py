@@ -93,7 +93,10 @@ def get_paragraph_embedding(paragraph):
     Generate sentence embeddings for a given paragraph.
     """
     sentences = paragraph.split('.')
+    print("Sentence Embedding :", sentences)
     sentence_embeddings = model.encode(sentences, convert_to_tensor=True)
+    print("Sentence Embedding :", sentence_embeddings)
+
     return sentences, sentence_embeddings
 
 def ask_question(paragraph, user_question, user_answer=None):
