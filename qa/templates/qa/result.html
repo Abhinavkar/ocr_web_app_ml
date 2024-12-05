@@ -14,12 +14,12 @@
         <div class="result-section">
             <h2>{{ item.question_label }}</h2>
             <h3>Best Matching Sentence:</h3>
-            <p>{{ item.result.best_match_sentence }}</p>
+            <p>{{ item.result.0 }}</p>
             <h3>Similarity Score:</h3>
-            <p>{{ item.result.best_match_score }}%</p>
+            <p>{{ item.result.1 }}%</p>
             <h3>User Answer Similarity:</h3>
-            <p>{{ item.result.answer_similarity_score }}%</p>
-            <p>{{ item.result.answer_relevance }}</p>
+            <p>{{ item.result.2 }}%</p>
+            <p>{{ item.result.3 }}</p>
         </div>
         {% endfor %}
         

@@ -71,7 +71,7 @@ def extract_questions_from_image(image_path):
     # Use regex to find numbered questions
     questions = re.findall(r'\d+\.\s+(.*?)(?=\d+\.\s|$)', extracted_text, re.DOTALL)
     indexed_questions = {f"Question {i + 1}": question.replace('\n', ' ').strip() for i, question in enumerate(questions)}
-    # print(indexed_questions)
+    print(indexed_questions)
 
     return indexed_questions
 
