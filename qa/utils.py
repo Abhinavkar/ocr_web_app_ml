@@ -88,6 +88,18 @@ def extract_answers_from_image(image_path):
     return indexed_answers
 
 
+def remove_auxiliary_words(text):
+    text  = text.split('')
+    text  = text.lower()
+    auxiliaryVerbs = [  "am", "is", "are", "was", "were", "be", "being", "been",  "have", "has", "had",  "do", "does", "did",  "shall", "should", "will", "would", "can", "could", "may", "might", "must", "ought", "need", "dare", "used to"]
+
+
+
+
+
+
+
+
 def get_paragraph_embedding(paragraph):
     """
     Generate sentence embeddings for a given paragraph.
