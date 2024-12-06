@@ -146,5 +146,6 @@ def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path
         user_answer = answers.get(answer_label, "")
         result = ask_question(paragraph, user_question, user_answer)
         results.append({'question_label': question_label, 'result': result})
+        
 
     return results
