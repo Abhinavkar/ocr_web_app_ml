@@ -7,6 +7,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'qa/styles.css' %}">
 </head>
 <body>
+    {% include 'qa/navbar.html' %}
     <div class="container">
         <h1 class="HomeHeader">Welcome to the Q&A Performance Analyser</h1>
         <div class="HomeMidSection">
@@ -14,12 +15,6 @@
                 <a href="{% url 'upload_files' %}">Upload Files for Analysis </a>
             </button>
         </div>
-    </div>
-    <div class="logout-section">
-        <form method="POST" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button type="submit">Logout</button>
-        </form>
     </div>
 </body>
 </html>

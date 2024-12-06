@@ -94,12 +94,6 @@ def remove_auxiliary_words(text):
     auxiliaryVerbs = [  "am", "is", "are", "was", "were", "be", "being", "been",  "have", "has", "had",  "do", "does", "did",  "shall", "should", "will", "would", "can", "could", "may", "might", "must", "ought", "need", "dare", "used to"]
 
 
-
-
-
-
-
-
 def get_paragraph_embedding(paragraph):
     """
     Generate sentence embeddings for a given paragraph.
@@ -145,9 +139,7 @@ def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path
     """
     paragraph = extract_text_from_pdf(pdf_file_path)
     questions = extract_questions_from_image(question_image_path)
-    print(questions)
     answers = extract_answers_from_image(answer_image_path)
-    print(answers)
     results = []
     for question_label, user_question in questions.items():
         answer_label = question_label.replace("Question", "Answer")
