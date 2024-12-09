@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'qa',
-    'authentication'
+    'authentication',
+    'admin_app',
 ]
 
 MIDDLEWARE = [
@@ -147,3 +148,6 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
+
+
+LOGIN_REDIRECT_URL = '/adminapp/dashboard/'
