@@ -151,3 +151,16 @@ SIMPLE_JWT = {
 
 
 LOGIN_REDIRECT_URL = '/adminapp/dashboard/'
+
+DATABASES = {
+    "default":{
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'ocr_db',
+        'USER': 'postgres',
+        'PASSWORD': '123123',
+        'HOST': 'localhost',
+        'PORT': '5432',
+
+    }
+
+}
