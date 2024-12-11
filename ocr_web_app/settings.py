@@ -39,9 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+
+
+
     'qa',
     'authentication',
-    'admin_app',
 ]
 
 MIDDLEWARE = [
@@ -77,13 +80,6 @@ WSGI_APPLICATION = 'ocr_web_app.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
 
 # Password validation
@@ -131,7 +127,6 @@ STATICFILES_DIRS = [
     BASE_DIR / "qa" / "static",
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-LOGIN_URL = '/auth/login/'  
 
 
 from datetime import timedelta
@@ -149,8 +144,6 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-
-LOGIN_REDIRECT_URL = '/adminapp/dashboard/'
 
 DATABASES = {
     "default":{
