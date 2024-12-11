@@ -6,6 +6,7 @@
     <link rel="stylesheet" type="text/css" href="{% static 'qa/styles.css' %}">
 </head>
 <body>
+    {% include 'qa/navbar.html' %}
     <div class="container">
         <h1>Upload PDF and Image Files</h1>
         <form method="POST" enctype="multipart/form-data" id="uploadForm">
@@ -23,12 +24,7 @@
         </form>
     </div>
         <!-- Logout Button -->
-    <div class="logout-section">
-        <form method="POST" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button type="submit">Logout</button>
-        </form>
-    </div>
+  
     <script>
         document.getElementById('uploadForm').addEventListener('submit', function() {
             var submitButton = document.getElementById('submitButton');

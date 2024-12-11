@@ -1,16 +1,4 @@
-# from django.contrib import admin
-# from django.urls import path, include
-# from django.conf import settings
-# from django.conf.urls.static import static
 
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     # path('', include('qa.urls')),
-#     path('auth/', include('authentication.urls')),
-# ]
-# # Add these to the main urls.py
-
-# urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
@@ -21,7 +9,7 @@ def redirect_to_login(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', redirect_to_login),  # Redirect the root URL to the login page
-    path('auth/', include('authentication.urls')),  # Include authentication app URLs
-    path('qa/', include('qa.urls')),  # Include QA app URLs
+    path('api/qa/', include('qa.urls')),
+    path('api/auth/', include('authentication.urls')),
+
 ]

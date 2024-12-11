@@ -107,7 +107,7 @@ def extract_questions_from_image(image_path):
     # Use regex to find numbered questions
     questions = re.findall(r'\d+\.\s+(.*?)(?=\d+\.\s|$)', extracted_text, re.DOTALL)
     indexed_questions = {f"Question {i + 1}": question.replace('\n', ' ').strip() for i, question in enumerate(questions)}
-    # print(indexed_questions)
+    print(indexed_questions)
 
     return indexed_questions
 
@@ -122,6 +122,12 @@ def extract_answers_from_image(image_path):
     indexed_answers = {f"Answer {i+1}": answer.replace('\n', ' ').strip() for i, answer in enumerate(answers)}
     print(indexed_answers)
     return indexed_answers
+
+
+def remove_auxiliary_words(text):
+    text  = text.split('')
+    text  = text.lower()
+    auxiliaryVerbs = [  "am", "is", "are", "was", "were", "be", "being", "been",  "have", "has", "had",  "do", "does", "did",  "shall", "should", "will", "would", "can", "could", "may", "might", "must", "ought", "need", "dare", "used to"]
 
 
 def get_paragraph_embedding(paragraph):
@@ -169,14 +175,13 @@ def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path
     """
     paragraph = extract_text_from_pdf(pdf_file_path)
     questions = extract_questions_from_image(question_image_path)
-    print(questions)
     answers = extract_answers_from_image(answer_image_path)
-    print(answers)
     results = []
     for question_label, user_question in questions.items():
         answer_label = question_label.replace("Question", "Answer")
         user_answer = answers.get(answer_label, "")
         result = ask_question(cleaned_paragraph, user_question, user_answer)
         results.append({'question_label': question_label, 'result': result})
+        
 
     return results

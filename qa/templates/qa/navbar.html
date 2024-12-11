@@ -1,0 +1,16 @@
+<!-- navbar.html -->
+{% load static %}
+
+    <nav class="navbar">
+        <div class="containers">
+            <a href="{% url 'home' %}" class="navbar-brand">Q&A Performance Analyser</a>
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <form method="POST" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link logout-button">Logout</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </nav>
