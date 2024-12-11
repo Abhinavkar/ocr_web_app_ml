@@ -9,7 +9,7 @@ def redirect_to_login(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', redirect_to_login),  # Redirect the root URL to the login page
-    path('auth/', include('authentication.urls')),  # Include authentication app URLs
-    path('qa/', include('qa.urls')),  # Include QA app URLs
+    path('api/qa/', include('qa.urls')),
+    path('api/auth/', include('authentication.urls')),
+
 ]
