@@ -1,42 +1,76 @@
-from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.views import APIView
+from .serializers import RegisterUserSerializer, LoginUserSerializer
 
-def register_user(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        email = request.POST['email']
-        password = request.POST['password']
-        confirm_password = request.POST['confirm_password']
+class RegisterAdminUserView(APIView):
+    def post(self, request):
+        serializer = RegisterUserSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+            # Set is_admin to True (admin user)
+            is_admin = True
 
-        if password == confirm_password:
-            if User.objects.filter(username=username).exists():
-                messages.error(request, "Username already exists.")
-            elif User.objects.filter(email=email).exists():
-                messages.error(request, "Email already registered.")
-            else:
-                user = User.objects.create_user(username=username, email=email, password=password)
-                user.save()
-                messages.success(request, "Registration successful. Please log in.")
-                return redirect('login')
-        else:
-            messages.error(request, "Passwords do not match.")
-    return render(request, 'authentication/register.html')
+            # Create the admin user
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                is_admin = True
+            )
+            user.is_staff = is_admin  # Set the user as an admin
+            user.save()
 
-def login_user(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('home')  # Redirect to the QA app's home page
-        else:
-            messages.error(request, "Invalid username or password.")
-    return render(request, 'authentication/login.html')
+            return Response({"message": "Admin user registered successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def logout_view(request):
-    logout(request)
-    messages.success(request, "You have been logged out.")
-    return redirect('login')
+################################################################################################################################3
+class RegisterNormalUserView(APIView):
+    def post(self, request):
+        serializer = RegisterUserSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+            # Set is_admin to False (normal user)
+            is_admin = False
+
+            # Create the normal user
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                is_admin = False
+            )
+            user.is_staff = is_admin  # Ensure the user is not an admin
+            user.save()
+
+            return Response({"message": "Normal user registered successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+##################################################################################################################################
+
+
+class LoginUserView(APIView):
+    def post(self, request):
+        serializer = LoginUserSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+            user = authenticate(username=username, password=password)
+            if user:
+                login(request, user)
+                is_admin = user.is_staff 
+                return Response(
+                    {"message": "Login successful", "is_admin": is_admin}, 
+                    status=status.HTTP_200_OK
+                )
+            return Response({"message": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class LogoutUserView(APIView):
+    def post(self, request):
+        logout(request)  # This will log out the user
+        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
