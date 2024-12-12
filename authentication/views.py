@@ -42,7 +42,7 @@ class RegisterNormalUserView(APIView):
             user.is_staff = False  # Ensure the user is not an admin
             user.save()
 
-            return Response({"message": "Normal user registered successfully"}, status=status.HTTP_201_CREATED)
+            return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginUserView(APIView):
