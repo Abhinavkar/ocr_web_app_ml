@@ -12,13 +12,13 @@ class RegisterAdminUserView(APIView):
             username = serializer.validated_data['username']
             password = serializer.validated_data['password']
 
-            # Create the admin user
+            
             user = User.objects.create_user(
                 username=username,
                 password=password,
             )
             user.is_staff = True  # Set the user as an admin
-            user.is_superuser = True  # Optionally make them a superuser
+            user.is_superuser = True  
             user.save()
 
             return Response({"message": "Admin user registered successfully"}, status=status.HTTP_201_CREATED)

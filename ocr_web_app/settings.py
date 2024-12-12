@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from corsheaders.defaults import default_headers
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,7 +28,27 @@ SECRET_KEY = 'django-insecure-ysk3l9maisy&rio7)@%-z2p8in!ko4f=!az1@=0=8q#z$7zb-m
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+
+ALLOWED_HOSTS = ["http://localhost:5173",'127.0.0.1',"localhost"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  
+]
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'Authorization',
+    'Content-Type',
+
+]
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    "PUT",
+    "PATCH",
+    "DELETE",
+    'OPTIONS',
+]
+
 
 
 # Application definition
@@ -40,6 +61,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
+
 
 
 
@@ -49,6 +72,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
