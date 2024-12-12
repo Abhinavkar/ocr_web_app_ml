@@ -14,74 +14,6 @@ from .utils import *
 
 fs = FileSystemStorage()  # This will handle the file storage
 
-# class AdminPdfUpload(APIView):
-#     permission_classes = [IsAuthenticated, IsAdminUser]  # Ensure user is authenticated and an admin
-
-#     def post(self, request):
-#         class_selected = request.data.get('class_selected')
-#         subject_selected = request.data.get('subject_selected')
-#         pdf_file = request.FILES('course_pdf')
-#         question_image = request.FILES.get('question_image')
-
-#         if not class_selected or not subject_selected:
-#             return Response({"message": "Class and Subject must be selected."}, status=400)
-
-#         # Prepare response data to include class and subject info
-#         response_data = {"class": class_selected, "subject": subject_selected}
-
-#         # Handle the PDF file upload
-#         if pdf_file:
-#             if not pdf_file.name.endswith('.pdf'):
-#                 return Response({"message": "Only PDF files are allowed for course PDF."}, status=400)
-            
-#             fs = FileSystemStorage()
-#             pdf_file = request.FILES['pdf']
-#             pdf_file_path = fs.save(pdf_file.name, pdf_file)
-#             pdf_file_full_path = fs.path(pdf_file_path)
-#             response_data["course_pdf_url"] = pdf_file_full_path
-
-#         # Handle the question image upload
-#         if question_image:
-#             if not (question_image.name.endswith('.png') or question_image.name.endswith('.jpg') or question_image.name.endswith('.jpeg')):
-#                 return Response({"message": "Only PNG, JPG, or JPEG files are allowed for question paper image."}, status=400)
-
-#             question_image_filename = fs.save(question_image.name, question_image)
-#             question_image_url = fs.url(question_image_filename)
-#             response_data["question_image_url"] = question_image_url
-#             fs = FileSystemStorage()
-#             question_image = request.FILES['question_image']
-#             pdf_file_path = fs.save(pdf_file.name, pdf_file)
-#             question_image_path = fs.save(question_image.name, question_image)
-#             question_image_full_path = fs.path(question_image_path)
-
-            
-                
-
-#         # If neither PDF nor question image is uploaded, return an error
-#         if not pdf_file and not question_image:
-#             return Response({"message": "At least one file (course PDF or question paper image) must be uploaded."}, status=400)
-        
-#         try:
-#             pdf_extracted_text=extract_text_from_pdf(pdf_file_full_path)
-#             print(pdf_extracted_text)
-
-#         except:
-#             print("PDF EXTRACTION FAILED")
-#             return Response({"message":"PDF EXTRACTION FAILED"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-#         # vector_storage(pdf_extracted_text)
-
-#         try:
-#             question_image_extracted_text=extract_questions_from_image(question_image_full_path)
-#             print(question_image_extracted_text)
-#             return Response({"message": "Files uploaded successfully.", **response_data}, status=200)
-        
-#         except:
-#             print("PDF EXTRACTION FAILED")
-#             return Response({"message":"Image EXTRACTION FAILED"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-#         # vector_stroage(question_image_extracted_text)
-
        
 class AdminPdfUpload(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
@@ -127,6 +59,8 @@ class AdminPdfUpload(APIView):
 
             if question_image:
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
+
+                
                 response_data["question_image_extracted_text"] = question_image_extracted_text
                
 
