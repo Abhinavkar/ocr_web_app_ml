@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from .serializers import RegisterUserSerializer, LoginUserSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 
 class RegisterAdminUserView(APIView):
     def post(self, request):
@@ -50,15 +53,21 @@ class LoginUserView(APIView):
             password = serializer.validated_data['password']
             user = authenticate(username=username, password=password)
             if user:
-                login(request, user)
-                is_admin = user.is_staff 
+                # Generate JWT tokens
+                refresh = RefreshToken.for_user(user)
                 return Response(
-                    {"message": "Login successful", "is_admin": is_admin}, 
-                    status=status.HTTP_200_OK
+                    {
+                        "message": "Login successful",
+                        "is_admin": user.is_staff,
+                        "refresh": str(refresh),
+                        "access": str(refresh.access_token),
+                    },
+                    status=status.HTTP_200_OK,
                 )
             return Response({"message": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@permission_classes([IsAuthenticated])
 class LogoutUserView(APIView):
     def post(self, request):
         logout(request)
