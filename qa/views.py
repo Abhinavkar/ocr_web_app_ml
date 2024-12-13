@@ -12,7 +12,7 @@ from .utils import *
 # from utils import 
 
 
-fs = FileSystemStorage()  # This will handle the file storage
+fs = FileSystemStorage() 
 
        
 class AdminPdfUpload(APIView):
