@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated , IsAdminUser
 from rest_framework.response import Response
 from rest_framework import generics, status
 from .utils import *
-
+from .models import Document, Image 
 # from utils import 
 
 
@@ -19,6 +19,7 @@ class AdminPdfUpload(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
+        
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
         pdf_file = request.FILES.get('pdf')  # Safely access the file
@@ -68,7 +69,34 @@ class AdminPdfUpload(APIView):
 
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-
+    
+    def get(self, request):
+        documents = Document.objects.all()  # Get all document entries (adjust the queryset as needed)
+        images = Image.objects.all()  # Get all image entries (adjust the queryset as needed)
+        
+        # Prepare the response data
+        document_data = []
+        for document in documents:
+            document_data.append({
+                "id": document.id,
+                "pdf_url": fs.url(document.pdf),
+                "uploaded_at": document.uploaded_at
+            })
+        
+        image_data = []
+        for image in images:
+            image_data.append({
+                "id": image.id,
+                "image_url": fs.url(image.image),
+                "uploaded_at": image.uploaded_at
+            })
+             # Combine documents and images in the response
+        return Response({
+            "documents": document_data,
+            "images": image_data
+        })
+    
+        
         
 
 class UserUploadAnswer(APIView):
@@ -108,3 +136,5 @@ def upload_files(request):
 
     else:
         return render(request, 'qa/upload.html')
+    
+    
