@@ -16,7 +16,7 @@ class Class(models.Model):
 
 
 class Subject(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255,)
     associated_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="subjects")
     class Meta:
         unique_together = ('name', 'associated_class')
