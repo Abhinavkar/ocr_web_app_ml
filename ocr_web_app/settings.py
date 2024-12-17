@@ -169,15 +169,28 @@ SIMPLE_JWT = {
 }
 
 
+# DATABASES = {
+#     "default":{
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'ocr_db',
+#         'USER': 'postgres',
+#         'PASSWORD': '123123',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+
+#     }
+
+# }
+
 DATABASES = {
-    "default":{
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ocr_db',
-        'USER': 'postgres',
-        'PASSWORD': '123123',
-        'HOST': 'localhost',
-        'PORT': '5432',
-
+    'default': {
+        'ENGINE': 'djongo',
+        'NAME': "ocr_db",
+        'CLIENT': {
+            'host':"mongodb+srv://ritu:12345@evaluator.uyj3n.mongodb.net/?retryWrites=true&w=majority&appName=evaluator",
+            'authSource': 'admin',
+            'authMechanism': 'SCRAM-SHA-1',
+            'ssl': True,
+        }
     }
-
 }
