@@ -10,4 +10,5 @@ urlpatterns = [
     # New Class and Subject APIs
     path('classes/', views.ClassListCreateAPI.as_view(), name='class_api'),
     path('subjects/', views.SubjectListCreateAPI.as_view(), name='subject_api'),
+    path('subjects/<int:id>/', views.SubjectListCreateAPI.as_view(), name='subject_api'),
     ]

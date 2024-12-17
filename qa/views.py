@@ -139,7 +139,7 @@ def upload_files(request):
         return render(request, 'qa/upload.html')
     
     
-
+#Added the API for Subject and class for dynamic
     
 class ClassListCreateAPI(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser] 
@@ -160,8 +160,12 @@ class ClassListCreateAPI(APIView):
 class SubjectListCreateAPI(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
 
-    def get(self, request):
-        subjects = Subject.objects.all()
+    def get(self, request, id):
+        class_id = id  # Get class_id from query param
+        subjects='' 
+        if class_id:
+            # Filter subjects based on the provided class_id
+            subjects = Subject.objects.filter(associated_class_id=class_id)
         serializer = SubjectSerializer(subjects, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
