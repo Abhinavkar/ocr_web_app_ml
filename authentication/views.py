@@ -7,6 +7,7 @@ from .serializers import RegisterUserSerializer, LoginUserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
+from djongo import models 
 
 class RegisterAdminUserView(APIView):
     def post(self, request):

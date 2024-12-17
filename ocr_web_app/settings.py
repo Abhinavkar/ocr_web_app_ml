@@ -187,7 +187,7 @@ DATABASES = {
         'ENGINE': 'djongo',
         'NAME': "ocr_db",
         'CLIENT': {
-            'host':"mongodb+srv://ritu:12345@evaluator.uyj3n.mongodb.net/?retryWrites=true&w=majority&appName=evaluator",
+            'host':"mongodb+srv://ritu:12345@model.5hsae.mongodb.net/?retryWrites=true&w=majority&appName=model",
             'authSource': 'admin',
             'authMechanism': 'SCRAM-SHA-1',
             'ssl': True,
