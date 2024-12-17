@@ -7,3 +7,19 @@ class Document(models.Model):
 class Image(models.Model):
     image = models.ImageField(upload_to='images/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+class Class(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Subject(models.Model):
+    name = models.CharField(max_length=255,)
+    associated_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="subjects")
+    class Meta:
+        unique_together = ('name', 'associated_class')
+
+    def __str__(self):
+        return f"{self.name} ({self.associated_class.name})"

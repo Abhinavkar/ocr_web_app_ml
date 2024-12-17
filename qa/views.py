@@ -8,20 +8,19 @@ from rest_framework.permissions import IsAuthenticated , IsAdminUser
 from rest_framework.response import Response
 from rest_framework import generics, status
 from .utils import *
-import psycopg2
-
-# from utils import 
+from .models import Document, Image 
+from .models import Class, Subject
+from .serializers import ClassSerializer, SubjectSerializer
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 fs = FileSystemStorage() 
 
        
 class AdminPdfUpload(APIView):
-  
-
-
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
+        
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
         pdf_file = request.FILES.get('pdf')  # Safely access the file
@@ -30,7 +29,6 @@ class AdminPdfUpload(APIView):
         if not class_selected or not subject_selected:
             return Response({"message": "Class and Subject must be selected."}, status=400)
 
-        # Prepare response data to include class and subject info
         response_data = {"class": class_selected, "subject": subject_selected}
 
         # Handle the PDF file upload
@@ -40,6 +38,7 @@ class AdminPdfUpload(APIView):
 
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
             pdf_file_full_path = fs.path(pdf_file_path)
+
             response_data["course_pdf_url"] = pdf_file_full_path
 
         # Handle the question image upload
@@ -49,6 +48,7 @@ class AdminPdfUpload(APIView):
 
             question_image_path = fs.save(question_image.name, question_image)
             question_image_full_path = fs.path(question_image_path)
+
             response_data["question_image_url"] = fs.url(question_image_path)
 
         # If neither file is uploaded
@@ -57,18 +57,20 @@ class AdminPdfUpload(APIView):
 
         try:
             if pdf_file:
-                pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
-                try: 
-                    emb_text=createembeddings(pdf_extracted_text)
+                try:
+                    pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
+            
                    
                     print("Great Success Embedding Created")
                 except Exception as e:
                     return Response({"message Embedding Issue Happened": str(e)}, status=500)
-                
+    
             if question_image:
-                question_image_extracted_text = extract_questions_from_image(question_image_full_path)
+                
                 try:
-                    emb_text=createembeddings(question_image_extracted_te
+                    question_image_extracted_text = extract_questions_from_image(question_image_full_path)
+                    
+
                     print("Question Embedding Created")        
                 except:            
                     return Response({"message": f"An error occurred in Question Embeddings: {str(e)}"}, status=500)
@@ -77,7 +79,34 @@ class AdminPdfUpload(APIView):
 
         except Exception as e:            
             return Response({"message": f"An error occurred in Question Embeddings: {str(e)}"}, status=500)
+    
+    def get(self, request):
+        documents = Document.objects.all()  # Get all document entries (adjust the queryset as needed)
+        images = Image.objects.all()  # Get all image entries (adjust the queryset as needed)
         
+        # Prepare the response data
+        document_data = []
+        for document in documents:
+            document_data.append({
+                "id": document.id,
+                "pdf_url": fs.url(document.pdf),
+                "uploaded_at": document.uploaded_at
+            })
+        
+        image_data = []
+        for image in images:
+            image_data.append({
+                "id": image.id,
+                "image_url": fs.url(image.image),
+                "uploaded_at": image.uploaded_at
+            })
+             # Combine documents and images in the response
+        return Response({
+            "documents": document_data,
+            "images": image_data
+        })
+    
+                
 
 
 class UserUploadAnswer(APIView):
@@ -117,3 +146,42 @@ def upload_files(request):
 
     else:
         return render(request, 'qa/upload.html')
+    
+    
+#Added the API for Subject and class for dynamic
+    
+class ClassListCreateAPI(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser] 
+
+    def get(self, request):
+        classes = Class.objects.all()
+        serializer = ClassSerializer(classes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = ClassSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubjectListCreateAPI(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request, id):
+        class_id = id  # Get class_id from query param
+        subjects='' 
+        if class_id:
+            # Filter subjects based on the provided class_id
+            subjects = Subject.objects.filter(associated_class_id=class_id)
+        serializer = SubjectSerializer(subjects, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = SubjectSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
