@@ -147,7 +147,7 @@ def upload_files(request):
     else:
         return render(request, 'qa/upload.html')
     
-    
+     
 #Added the API for Subject and class for dynamic
     
 class ClassListCreateAPI(APIView):
