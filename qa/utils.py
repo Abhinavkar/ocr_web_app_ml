@@ -68,6 +68,8 @@ def extract_questions_from_image(image_path):
     ocr_prompt = "Analyze the given image to identify and extract all handwritten text. I want only the questions in the output. If there are multiple questions, index each distinct point sequentially."
     extracted_text = extract_text_from_image(image_path, ocr_prompt)
 
+    
+
     # Use regex to find numbered questions
     questions = re.findall(r'\d+\.\s+(.*?)(?=\d+\.\s|$)', extracted_text, re.DOTALL)
     indexed_questions = {f"Question {i + 1}": question.replace('\n', ' ').strip() for i, question in enumerate(questions)}
@@ -149,3 +151,4 @@ def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path
         
 
     return results
+

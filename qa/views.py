@@ -8,14 +8,17 @@ from rest_framework.permissions import IsAuthenticated , IsAdminUser
 from rest_framework.response import Response
 from rest_framework import generics, status
 from .utils import *
+import psycopg2
 
 # from utils import 
-
 
 fs = FileSystemStorage() 
 
        
 class AdminPdfUpload(APIView):
+  
+
+
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
@@ -55,21 +58,27 @@ class AdminPdfUpload(APIView):
         try:
             if pdf_file:
                 pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
+                try: 
+                    emb_text=createembeddings(pdf_extracted_text)
+                   
+                    print("Great Success Embedding Created")
+                except Exception as e:
+                    return Response({"message Embedding Issue Happened": str(e)}, status=500)
                 
-
             if question_image:
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
-
-                
-                response_data["question_image_extracted_text"] = question_image_extracted_text
-               
-
+                try:
+                    emb_text=createembeddings(question_image_extracted_te
+                    print("Question Embedding Created")        
+                except:            
+                    return Response({"message": f"An error occurred in Question Embeddings: {str(e)}"}, status=500)
+                # response_data["question_image_extracted_text"] = question_image_extracted_text
             return Response({"message": "Files uploaded successfully.", **response_data}, status=200)
 
-        except Exception as e:
-            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-
+        except Exception as e:            
+            return Response({"message": f"An error occurred in Question Embeddings: {str(e)}"}, status=500)
         
+
 
 class UserUploadAnswer(APIView):
      # permission_classes = [IsAuthenticated, IsAdminUser]
