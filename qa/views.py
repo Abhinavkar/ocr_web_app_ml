@@ -13,6 +13,7 @@ from .models import Class, Subject
 from .serializers import ClassSerializer, SubjectSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
+
 fs = FileSystemStorage() 
 
        
@@ -29,6 +30,7 @@ class AdminPdfUpload(APIView):
         if not class_selected or not subject_selected:
             return Response({"message": "Class and Subject must be selected."}, status=400)
 
+        # Prepare response data to include class and subject info
         response_data = {"class": class_selected, "subject": subject_selected}
 
         # Handle the PDF file upload
@@ -38,7 +40,6 @@ class AdminPdfUpload(APIView):
 
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
             pdf_file_full_path = fs.path(pdf_file_path)
-
             response_data["course_pdf_url"] = pdf_file_full_path
 
         # Handle the question image upload
@@ -48,7 +49,6 @@ class AdminPdfUpload(APIView):
 
             question_image_path = fs.save(question_image.name, question_image)
             question_image_full_path = fs.path(question_image_path)
-
             response_data["question_image_url"] = fs.url(question_image_path)
 
         # If neither file is uploaded
@@ -57,28 +57,20 @@ class AdminPdfUpload(APIView):
 
         try:
             if pdf_file:
-                try:
-                    pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
-            
-                   
-                    print("Great Success Embedding Created")
-                except Exception as e:
-                    return Response({"message Embedding Issue Happened": str(e)}, status=500)
-    
-            if question_image:
+                pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
                 
-                try:
-                    question_image_extracted_text = extract_questions_from_image(question_image_full_path)
-                    
 
-                    print("Question Embedding Created")        
-                except:            
-                    return Response({"message": f"An error occurred in Question Embeddings: {str(e)}"}, status=500)
-                # response_data["question_image_extracted_text"] = question_image_extracted_text
+            if question_image:
+                question_image_extracted_text = extract_questions_from_image(question_image_full_path)
+
+                
+                response_data["question_image_extracted_text"] = question_image_extracted_text
+               
+
             return Response({"message": "Files uploaded successfully.", **response_data}, status=200)
 
-        except Exception as e:            
-            return Response({"message": f"An error occurred in Question Embeddings: {str(e)}"}, status=500)
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
     
     def get(self, request):
         documents = Document.objects.all()  # Get all document entries (adjust the queryset as needed)
@@ -106,8 +98,8 @@ class AdminPdfUpload(APIView):
             "images": image_data
         })
     
-                
-
+        
+        
 
 class UserUploadAnswer(APIView):
      # permission_classes = [IsAuthenticated, IsAdminUser]
@@ -147,7 +139,7 @@ def upload_files(request):
     else:
         return render(request, 'qa/upload.html')
     
-     
+    
 #Added the API for Subject and class for dynamic
     
 class ClassListCreateAPI(APIView):
