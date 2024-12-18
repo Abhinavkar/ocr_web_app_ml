@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from authentication.db_wrapper import get_collection
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 
 class RegisterAdminUserView(APIView):
     def post(self, request):
@@ -19,10 +19,13 @@ class RegisterAdminUserView(APIView):
         if users_collection.find_one({"username": data["username"]}):
             return Response({"error": "Admin already exists"}, status=400)
 
-        # Insert new admin user
+        # Hash the password
+        hashed_password = make_password(data["password"])
+
+        # Insert new admin user with hashed password
         users_collection.insert_one({
             "username": data["username"],
-            "password": data["password"],  # Use hashed passwords in production
+            "password": hashed_password,  
             "is_admin": True,
             "is_superstaff": True,
         })

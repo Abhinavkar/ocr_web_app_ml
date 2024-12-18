@@ -1,5 +1,4 @@
-from djongo import models
-
+from django.db import models
 class Class(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
