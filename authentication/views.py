@@ -7,26 +7,27 @@ from .serializers import RegisterUserSerializer, LoginUserSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
-from djongo import models 
+from authentication.db_wrapper import get_collection
+from django.contrib.auth.hashers import check_password
 
 class RegisterAdminUserView(APIView):
     def post(self, request):
-        serializer = RegisterUserSerializer(data=request.data)
-        if serializer.is_valid():
-            username = serializer.validated_data['username']
-            password = serializer.validated_data['password']
+        data = request.data
+        users_collection = get_collection("auth_users")
 
-            
-            user = User.objects.create_user(
-                username=username,
-                password=password,
-            )
-            user.is_staff = True  # Set the user as an admin
-            user.is_superuser = True  
-            user.save()
+        # Check if user already exists
+        if users_collection.find_one({"username": data["username"]}):
+            return Response({"error": "Admin already exists"}, status=400)
 
-            return Response({"message": "Admin user registered successfully"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Insert new admin user
+        users_collection.insert_one({
+            "username": data["username"],
+            "password": data["password"],  # Use hashed passwords in production
+            "is_admin": True,
+            "is_superstaff": True,
+        })
+        return Response({"message": "Admin registered successfully"}, status=201)
+
 
 class RegisterNormalUserView(APIView):
     def post(self, request):
@@ -46,27 +47,38 @@ class RegisterNormalUserView(APIView):
             return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
 class LoginUserView(APIView):
     def post(self, request):
-        serializer = LoginUserSerializer(data=request.data)
-        if serializer.is_valid():
-            username = serializer.validated_data['username']
-            password = serializer.validated_data['password']
-            user = authenticate(username=username, password=password)
-            if user:
+        data = request.data
+        users_collection = get_collection("auth_users")
+        print(users_collection)
+
+        # Find user in MongoDB
+        user = users_collection.find_one({"username": data["username"]})
+        print(user)
+
+        if user and check_password(data["password"], user["password"]):  # Compare hashed passwords
+            # Check admin privileges
+            if user.get("is_admin") and user.get("is_superstaff"):
                 # Generate JWT tokens
-                refresh = RefreshToken.for_user(user)
-                return Response(
-                    {
-                        "message": "Login successful",
-                        "is_admin": user.is_staff,
-                        "refresh": str(refresh),
-                        "access": str(refresh.access_token),
-                    },
-                    status=status.HTTP_200_OK,
-                )
-            return Response({"message": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                refresh = RefreshToken()
+                access_token = refresh.access_token
+
+                return Response({
+                    "message": "Admin login successful",
+                    "is_admin": True,
+                    "refresh": str(refresh),
+                    "access": str(access_token),
+                }, status=200)
+            else:
+                return Response({"message": "Access denied: Not an admin user"}, status=403)
+
+        return Response({"message": "Invalid credentials"}, status=400)
+
+
+
 
 @permission_classes([IsAuthenticated])
 class LogoutUserView(APIView):
