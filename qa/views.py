@@ -12,6 +12,9 @@ from .models import Document, Image
 from .models import Class, Subject
 from .serializers import ClassSerializer, SubjectSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+    
+from authentication.db_wrapper import get_collection
+
 
 fs = FileSystemStorage() 
 
@@ -139,40 +142,42 @@ def upload_files(request):
         return render(request, 'qa/upload.html')
     
     
-#Added the API for Subject and class for dynamic
-    
 class ClassListCreateAPI(APIView):
-    permission_classes = [IsAuthenticated, IsAdminUser] 
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
-        classes = Class.objects.all()
-        serializer = ClassSerializer(classes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        classes_collection = get_collection("classes")
+        classes = list(classes_collection.find({}))
+        for cls in classes:
+            cls["_id"] = str(cls["_id"]) 
+        return Response(classes, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = ClassSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        classes_collection = get_collection("classes")
+        if classes_collection.find_one({"name": data["name"]}):
+            return Response({"error": "Class already exists"}, status=400)
+        classes_collection.insert_one(data)
+        return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
 
 
 class SubjectListCreateAPI(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
 
-    def get(self, request, id):
-        class_id = id  # Get class_id from query param
-        subjects='' 
-        if class_id:
-            # Filter subjects based on the provided class_id
-            subjects = Subject.objects.filter(associated_class_id=class_id)
-        serializer = SubjectSerializer(subjects, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get(self, request, id=None):
+        subjects_collection = get_collection("subjects")
+        if id:
+            subjects = list(subjects_collection.find({"associated_class_id": id}))
+        else:
+            subjects = list(subjects_collection.find({}))
+        for subject in subjects:
+            subject["_id"] = str(subject["_id"])  # Convert ObjectId to string
+        return Response(subjects, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = SubjectSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        data = request.data
+        subjects_collection = get_collection("subjects")
+        if subjects_collection.find_one({"name": data["name"], "associated_class_id": data["associated_class_id"]}):
+            return Response({"error": "Subject already exists for this class"}, status=400)
+        subjects_collection.insert_one(data)
+        return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)

@@ -54,9 +54,6 @@ class LoginUserView(APIView):
         print(user)
 
         if user and check_password(data["password"], user["password"]):  # Compare hashed passwords
-            # Check admin privileges
-            
-                # Generate JWT tokens
                 refresh = RefreshToken()
                 access_token = refresh.access_token
 
@@ -68,10 +65,6 @@ class LoginUserView(APIView):
                 }, status=200)
         else:
                 return Response({"message": "Invalid credentials"}, status=400)
-
-        
-
-
 
 
 @permission_classes([IsAuthenticated])
