@@ -143,7 +143,7 @@ def upload_files(request):
     
     
 class ClassListCreateAPI(APIView):
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    #permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         classes_collection = get_collection("classes")
