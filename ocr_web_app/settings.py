@@ -162,6 +162,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Adjust as needed
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Adjust as needed
     'ROTATE_REFRESH_TOKENS': True,
@@ -191,6 +193,8 @@ DATABASES = {
             'authSource': 'admin',
             'authMechanism': 'SCRAM-SHA-1',
             'ssl': True,
+               'socketTimeoutMS': 30000,  
+                'connectTimeoutMS': 30000
         }
     }
 }
