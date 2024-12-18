@@ -13,7 +13,6 @@ from .models import Class, Subject
 from .serializers import ClassSerializer, SubjectSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
-
 fs = FileSystemStorage() 
 
        
