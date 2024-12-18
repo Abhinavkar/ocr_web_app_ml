@@ -162,6 +162,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Adjust as needed
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Adjust as needed
     'ROTATE_REFRESH_TOKENS': True,
@@ -182,18 +184,6 @@ SIMPLE_JWT = {
 
 # }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'NAME': "ocr_db",
-#         'CLIENT': {
-#             'host':"mongodb+srv://ritu:12345@model.5hsae.mongodb.net/?retryWrites=true&w=majority&appName=model",
-#             'authSource': 'admin',
-#             'authMechanism': 'SCRAM-SHA-1',
-#             'ssl': True,
-#         }
-#     }
-# }
 
 from pymongo import MongoClient
 
@@ -204,3 +194,4 @@ MONGO_DB_NAME = "ocr_db"
 # Initialize PyMongo Client
 client = MongoClient(MONGO_URI)
 db = client[MONGO_DB_NAME]
+

@@ -10,8 +10,6 @@ from rest_framework.decorators import permission_classes
 from authentication.db_wrapper import get_collection
 from django.contrib.auth.hashers import check_password
 
-
-
 class RegisterAdminUserView(APIView):
     def post(self, request):
         data = request.data

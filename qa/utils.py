@@ -5,6 +5,10 @@ import pdfplumber
 import os
 import re
 from django.conf import settings
+from .models import DocumentEmbedding
+from .models import ImageEmbedding
+from .models import QuestionAnswerResult
+import torch
 
 model = SentenceTransformer('BAAI/bge-large-en-v1.5')
 
@@ -135,20 +139,96 @@ def ask_question(paragraph, user_question, user_answer=None):
 
     return best_match_sentence.strip(), best_match_score, answer_similarity_score, answer_relevance
 
-def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path):
-    """
-    Process uploaded files (PDF and images) and return results for questions and answers.
-    """
-    paragraph = extract_text_from_pdf(pdf_file_path)
-    questions = extract_questions_from_image(question_image_path)
-    answers = extract_answers_from_image(answer_image_path)
-    results = []
-    for question_label, user_question in questions.items():
-        answer_label = question_label.replace("Question", "Answer")
-        user_answer = answers.get(answer_label, "")
-        result = ask_question(paragraph, user_question, user_answer)
-        results.append({'question_label': question_label, 'result': result})
-        
+# def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path,document_instance):
+#     """
+#     Process uploaded files (PDF and images) and return results for questions and answers.
+#     """
+#     paragraph = extract_text_from_pdf(pdf_file_path)
+#     questions = extract_questions_from_image(question_image_path)
+#     answers = extract_answers_from_image(answer_image_path)
+#     # results = []
+#     for question_label, user_question in questions.items():
+#         answer_label = question_label.replace("Question", "Answer")
+#         user_answer = answers.get(answer_label, "")
+#         best_match_sentence, best_match_score, answer_similarity_score, answer_relevance = ask_question(paragraph, user_question, user_answer)
+#         QuestionAnswerResult.objects.create(
+#             question_label=question_label,
+#             question_text=user_question,
+#             best_match_sentence=best_match_sentence,
+#             similarity_score=best_match_score,
+#             answer_relevance=answer_relevance,
+#             document=document_instance, 
+#             answer_text=user_answer
+#         )        
+def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path, document_instance):
+    paragraph_text = extract_text_from_pdf(pdf_file_path)
+   
+    sentences, sentence_embeddings = get_paragraph_embedding(paragraph_text)
+    document_embedding = sentence_embeddings.mean(dim=0)
+    document_comparison_results = compare_embeddings(document_embedding, type="document")
 
-    return results
+    if question_image_path:
+        image_embedding = extract_text_from_image(question_image_path) 
+        image_comparison_results = compare_embeddings(image_embedding, type="image")
 
+        DocumentEmbedding.objects.create(document=document_instance, embedding=document_embedding.cpu().tolist())
+
+        if question_image_path:
+            ImageEmbedding.objects.create(image=document_instance, embedding=image_embedding.cpu().tolist())
+
+    return {
+        'document_comparison_results': document_comparison_results,
+        'image_comparison_results': image_comparison_results if question_image_path else None
+    }
+
+
+
+def compare_embeddings(new_embedding, type="document"):
+    """
+    Compare the new document/image embedding with stored embeddings in MongoDB
+    and return the best match based on cosine similarity.
+    
+    Args:
+        new_embedding (tensor): The new embedding to compare with stored embeddings.
+        type (str): The type of data ("document" or "image").
+    
+    Returns:
+        list: A list of dictionaries with similarity scores and document/image IDs, sorted by similarity.
+    """
+    if type == "document":
+        stored_embeddings = DocumentEmbedding.objects.all()  
+    elif type == "image":
+        stored_embeddings = ImageEmbedding.objects.all() 
+    else:
+        return None  
+
+    similarity_scores = []
+
+    for stored_embedding in stored_embeddings:
+        stored_embedding_tensor = torch.tensor(stored_embedding.embedding)
+
+        similarity_score = util.cos_sim(new_embedding, stored_embedding_tensor).item()
+
+        similarity_scores.append({
+            'id': stored_embedding.document.id if type == "document" else stored_embedding.image.id,
+            'score': similarity_score
+        })
+
+    sorted_scores = sorted(similarity_scores, key=lambda x: x['score'], reverse=True)
+
+    return sorted_scores
+
+def save_embedding_to_db(document, embedding, type="document"):
+    """
+    Save the embedding into the database (MongoDB).
+    Args:
+        document: The Document or Image object
+        embedding: The computed embedding (tensor)
+        type: The type of data (document/image)
+    """
+    embedding_list = embedding.cpu().tolist()
+
+    if type == "document":
+        DocumentEmbedding.objects.create(document=document, embedding=embedding_list)
+    elif type == "image":
+        ImageEmbedding.objects.create(image=document, embedding=embedding_list)
