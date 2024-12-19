@@ -15,25 +15,25 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
     
 from authentication.db_wrapper import get_collection
 
+from .utils import extract_text_from_pdf, extract_questions_from_image
+
 
 fs = FileSystemStorage() 
 
        
 class AdminPdfUpload(APIView):
+   
+
     def post(self, request):
-        
+       
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
-        pdf_file = request.FILES.get('pdf')  # Safely access the file
-        question_image = request.FILES.get('question_image')  # Safely access the file
-
+        pdf_file = request.FILES.get('pdf') 
+        question_image = request.FILES.get('question_image')  
         if not class_selected or not subject_selected:
             return Response({"message": "Class and Subject must be selected."}, status=400)
-
-        # Prepare response data to include class and subject info
         response_data = {"class": class_selected, "subject": subject_selected}
-
-        # Handle the PDF file upload
+        fs = FileSystemStorage()
         if pdf_file:
             if not pdf_file.name.endswith('.pdf'):
                 return Response({"message": "Only PDF files are allowed for course PDF."}, status=400)
@@ -42,7 +42,6 @@ class AdminPdfUpload(APIView):
             pdf_file_full_path = fs.path(pdf_file_path)
             response_data["course_pdf_url"] = pdf_file_full_path
 
-        # Handle the question image upload
         if question_image:
             if not (question_image.name.endswith('.png') or question_image.name.endswith('.jpg') or question_image.name.endswith('.jpeg')):
                 return Response({"message": "Only PNG, JPG, or JPEG files are allowed for question paper image."}, status=400)
@@ -56,47 +55,67 @@ class AdminPdfUpload(APIView):
             return Response({"message": "At least one file (course PDF or question paper image) must be uploaded."}, status=400)
 
         try:
+            pdf_extracted_text = None
+            question_image_extracted_text = None
+
             if pdf_file:
                 pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
-                
+                response_data["pdf_extracted_text"] = pdf_extracted_text
 
             if question_image:
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
-
-                
                 response_data["question_image_extracted_text"] = question_image_extracted_text
-               
+
+            pdfs_collection = get_collection("pdf_questions")
+            
+            if pdf_file and question_image:
+                pdfs_collection.insert_one({
+                    "class_selected": class_selected,
+                    "subject_selected": subject_selected,
+                    "pdf_file_path": pdf_file_full_path,
+                    "pdf_extracted_text": pdf_extracted_text,
+                })
+            if question_image:
+                pdfs_collection.insert_one({
+                    "class_selected": class_selected,
+                    "subject_selected": subject_selected,
+                    "question_image_path": question_image_full_path,
+                    "question_image_extracted_text": question_image_extracted_text,
+                })
 
             return Response({"message": "Files uploaded successfully.", **response_data}, status=200)
 
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-    
+
     def get(self, request):
-        documents = Document.objects.all()  # Get all document entries (adjust the queryset as needed)
-        images = Image.objects.all()  # Get all image entries (adjust the queryset as needed)
-        
-        # Prepare the response data
-        document_data = []
-        for document in documents:
-            document_data.append({
-                "id": document.id,
-                "pdf_url": fs.url(document.pdf),
-                "uploaded_at": document.uploaded_at
+       
+        pdfs_collection = get_collection("pdfs")
+        questions_collection = get_collection("questions")
+
+        pdfs = list(pdfs_collection.find({}))
+        questions = list(questions_collection.find({}))
+        pdf_data = []
+        for pdf in pdfs:
+            pdf_data.append({
+                "id": str(pdf["_id"]),
+                "class_selected": pdf["class_selected"],
+                "subject_selected": pdf["subject_selected"],
+                "pdf_file_path": pdf["pdf_file_path"],
+                "pdf_extracted_text": pdf.get("pdf_extracted_text")
             })
-        
-        image_data = []
-        for image in images:
-            image_data.append({
-                "id": image.id,
-                "image_url": fs.url(image.image),
-                "uploaded_at": image.uploaded_at
+
+        question_data = []
+        for question in questions:
+            question_data.append({
+                "id": str(question["_id"]),
+                "class_selected": question["class_selected"],
+                "subject_selected": question["subject_selected"],
+                "question_image_path": question["question_image_path"],
+                "question_image_extracted_text": question.get("question_image_extracted_text")
+               
             })
-             # Combine documents and images in the response
-        return Response({
-            "documents": document_data,
-            "images": image_data
-        })
+        return Response({            "pdfs": pdf_data,            "questions": question_data        }, status=status.HTTP_200_OK)
     
         
         

@@ -61,7 +61,6 @@ class LoginUserView(APIView):
             return Response({"message": "Invalid credentials"}, status=400)
 
 
-@permission_classes([IsAuthenticated])
 class LogoutUserView(APIView):
     def post(self, request):
         logout(request)
