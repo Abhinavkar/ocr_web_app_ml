@@ -182,7 +182,6 @@ class SubjectListCreateAPI(APIView):
             return Response({"error": "Subject already exists for this class"}, status=400)
         subjects_collection.insert_one(data)
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
-    
 
 
 class AnswerUploadAPI(APIView):
