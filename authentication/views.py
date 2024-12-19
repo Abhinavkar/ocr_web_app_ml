@@ -48,12 +48,9 @@ class LoginUserView(APIView):
         user = authenticate(username=data["username"], password=data["password"])
         if user is not None:
             login(request, user)
-            refresh = RefreshToken.for_user(user)
             return Response({
                 "message": "Login successful",
                 "is_admin": user.is_admin,
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
             }, status=200)
         else:
             return Response({"message": "Invalid credentials"}, status=400)

@@ -203,3 +203,35 @@ class SubjectListCreateAPI(APIView):
             return Response({"error": "Subject already exists for this class"}, status=400)
         subjects_collection.insert_one(data)
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
+    
+
+
+class AnswerUploadAPI(APIView):
+    def post(self, request):
+        try:
+            roll_no = request.data.get('roll_no')
+            exam_id = request.data.get('exam_id')
+            class_id = request.data.get('class_id')
+            subject = request.data.get('subject')
+            pdf_file = request.FILES.get('pdf')
+
+            if not all([roll_no, exam_id, class_id, subject, pdf_file]):
+                return Response({"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            fs = FileSystemStorage()
+            pdf_file_path = fs.save(pdf_file.name, pdf_file)
+            pdf_file_full_path = fs.path(pdf_file_path)
+
+            answers_collection = get_collection("answers")
+            answers_collection.insert_one({
+                "roll_no": roll_no,
+                "exam_id": exam_id,
+                "class_id": class_id,
+                "subject": subject,
+                "pdf_file_path": pdf_file_full_path,
+                "uploaded_by": request.user
+            })
+        except Exception as e :
+            return Response({"message":"Bad Request"} , status=status.HTTP_501_NOT_IMPLEMENTED)
+
+        return Response({"message": "Answer uploaded successfully"}, status=status.HTTP_201_CREATED)
