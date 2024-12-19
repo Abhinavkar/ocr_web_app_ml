@@ -45,13 +45,17 @@ class RegisterNormalUserView(APIView):
 class LoginUserView(APIView):
     def post(self, request):
         data = request.data
-        user = authenticate(username=data["username"], password=data["password"])
-        if user is not None:
-            login(request, user)
-            return Response({
-                "message": "Login successful",
-                "is_admin": user.is_admin,
-            }, status=200)
+        users_collection = get_collection("auth_users")
+        print(users_collection)
+        user = users_collection.find_one({"username": data["username"]})
+        print(user)
+
+        if user and check_password(data["password"], user["password"]):
+
+                return Response({
+                    "message": "Admin login successful",
+                    "is_admin": user["is_admin"]
+                    }, status=200)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
 
