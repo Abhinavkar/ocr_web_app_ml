@@ -145,7 +145,6 @@ def upload_files(request):
     
 class ClassListCreateAPI(APIView):
 
-
     def get(self, request):
         classes_collection = get_collection("classes")
         classes = list(classes_collection.find({}))
