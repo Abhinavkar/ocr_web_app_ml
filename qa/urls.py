@@ -11,7 +11,7 @@ urlpatterns = [
     # New Class and Subject APIs
     path('classes/', views.ClassListCreateAPI.as_view(), name='class_api'),
     path('subjects/', views.SubjectListCreateAPI.as_view(), name='subject_api'),
-    path('subjects/<int:id>/', views.SubjectListCreateAPI.as_view(), name='subject_api'),
+    path('subjects/<str:id>/', views.SubjectListCreateAPI.as_view(), name='subject_api'),
     path('user/upload/answer/pdf',views.AdminPdfUpload.as_view(),name="answer_upload")
 
 
