@@ -21,6 +21,8 @@ class AdminPdfUpload(APIView):
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
         pdf_file = request.FILES.get('pdf') 
+
+
         question_image = request.FILES.get('question_image')  
         if not class_selected or not subject_selected:
             return Response({"message": "Class and Subject must be selected."}, status=400)
@@ -49,8 +51,6 @@ class AdminPdfUpload(APIView):
             if pdf_file:
                 pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
                 pdf_sentence,pdf_sentence_embeddings = get_paragraph_embedding(pdf_extracted_text)
-                pdf_storage=get_collection("pdf_storage")
-                pdf_storage.
 
             if question_image:
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
