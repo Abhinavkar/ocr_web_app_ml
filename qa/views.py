@@ -144,7 +144,12 @@ def upload_files(request):
     
     
 class ClassListCreateAPI(APIView):
+<<<<<<< HEAD
     
+=======
+
+
+>>>>>>> 5b0ed2a6505073a89cc5f1736756ca7361a132d9
     def get(self, request):
         classes_collection = get_collection("classes")
         classes = list(classes_collection.find({}))
@@ -153,7 +158,10 @@ class ClassListCreateAPI(APIView):
         return Response(classes, status=status.HTTP_200_OK)
 
     def post(self, request):
+<<<<<<< HEAD
        
+=======
+>>>>>>> 5b0ed2a6505073a89cc5f1736756ca7361a132d9
         data = request.data
         classes_collection = get_collection("classes")
         if classes_collection.find_one({"name": data["name"]}):
@@ -163,9 +171,14 @@ class ClassListCreateAPI(APIView):
 
 
 class SubjectListCreateAPI(APIView):
+<<<<<<< HEAD
   
     def get(self, request, id=None):
         
+=======
+    
+    def get(self, request, id=None):
+>>>>>>> 5b0ed2a6505073a89cc5f1736756ca7361a132d9
         subjects_collection = get_collection("subjects")
         if id:
             subjects = list(subjects_collection.find({"associated_class_id": id}))
@@ -182,7 +195,6 @@ class SubjectListCreateAPI(APIView):
             return Response({"error": "Subject already exists for this class"}, status=400)
         subjects_collection.insert_one(data)
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
-    
 
 
 class AnswerUploadAPI(APIView):
