@@ -19,7 +19,9 @@ fs = FileSystemStorage()
 class AdminPdfUpload(APIView):
     def post(self, request):     
         class_selected = request.data.get('class_selected')
+        print(class_selected)
         subject_selected = request.data.get('subject_selected')
+        print(subject_selected)
         pdf_file = request.FILES.get('pdf') 
         question_image = request.FILES.get('question_image')  
         if not class_selected or not subject_selected:
@@ -48,10 +50,12 @@ class AdminPdfUpload(APIView):
 
             if pdf_file:
                 pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
+                print(pdf_extracted_text)
                 response_data["pdf_extracted_text"] = pdf_extracted_text
 
             if question_image:
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
+                print(question_image_extracted_text)
                 response_data["question_image_extracted_text"] = question_image_extracted_text
 
             pdfs_collection = get_collection("pdf_questions")
