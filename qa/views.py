@@ -145,14 +145,9 @@ def upload_files(request):
     
     
 class ClassListCreateAPI(APIView):
-    permission_classes = [IsAuthenticated, IsAdminUser]
+
 
     def get(self, request):
-        try:
-            user, token = JWTAuthentication().authenticate(request)
-        except (InvalidToken, TokenError) as e:
-            return Response({"Token error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
         classes_collection = get_collection("classes")
         classes = list(classes_collection.find({}))
         for cls in classes:
@@ -160,11 +155,6 @@ class ClassListCreateAPI(APIView):
         return Response(classes, status=status.HTTP_200_OK)
 
     def post(self, request):
-        try:
-            user, token = JWTAuthentication().authenticate(request)
-        except (InvalidToken, TokenError) as e:
-            return Response({"Token error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
         data = request.data
         classes_collection = get_collection("classes")
         if classes_collection.find_one({"name": data["name"]}):
@@ -174,14 +164,8 @@ class ClassListCreateAPI(APIView):
 
 
 class SubjectListCreateAPI(APIView):
-    permission_classes = [IsAuthenticated, IsAdminUser]
-
+    
     def get(self, request, id=None):
-        try:
-            user, token = JWTAuthentication().authenticate(request)
-        except (InvalidToken, TokenError) as e:
-            return Response({"Token error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
         subjects_collection = get_collection("subjects")
         if id:
             subjects = list(subjects_collection.find({"associated_class_id": id}))
@@ -192,11 +176,6 @@ class SubjectListCreateAPI(APIView):
         return Response(subjects, status=status.HTTP_200_OK)
 
     def post(self, request):
-        try:
-            user, token = JWTAuthentication().authenticate(request)
-        except (InvalidToken, TokenError) as e:
-            return Response({"Token error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
         data = request.data
         subjects_collection = get_collection("subjects")
         if subjects_collection.find_one({"name": data["name"], "associated_class_id": data["associated_class_id"]}):
