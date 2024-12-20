@@ -10,8 +10,9 @@ from rest_framework import generics, status
 from .utils import *
 from authentication.db_wrapper import get_collection
 
-from .utils import extract_text_from_pdf, extract_questions_from_image
-
+from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
+from sentence_transformers import util
+ 
 
 fs = FileSystemStorage() 
 
@@ -48,33 +49,46 @@ class AdminPdfUpload(APIView):
             question_image_extracted_text = None
 
             if pdf_file:
+                print("Creating Embeddings for pdf")
                 pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
                 pdf_sentence,pdf_sentence_embeddings = get_paragraph_embedding(pdf_extracted_text)
 
+                
 
             if question_image:
+                print("Creating Embeddings for question")
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
-
+                question_sentence , question_sentence_embeddings = get_paragraph_embedding(question_image_extracted_text)
                 response_data["question_image_extracted_text"] = question_image_extracted_text
 
             pdfs_collection = get_collection("pdf_questions")
-            
-            if pdf_file and question_image:
-                pdfs_collection.insert_one({
-                    "class_selected": class_selected,
-                    "subject_selected": subject_selected,
-                    "exam_id": exam_id,
-                    "pdf_file_path": pdf_file_full_path,
-                    "pdf_extracted_text": pdf_extracted_text,
-                })
-            if question_image:
-                pdfs_collection.insert_one({
-                    "class_selected": class_selected,
-                    "subject_selected": subject_selected,
-                    "exam_id": exam_id,
-                    "question_image_path": question_image_full_path,
-                    "question_image_extracted_text": question_image_extracted_text,
-                })
+            try:
+                if pdf_file and question_image:
+                    pdfs_collection.insert_one({
+                        "class_selected": class_selected,
+                        "subject_selected": subject_selected,
+                        "exam_id": exam_id,
+                        "pdf_file_path": pdf_file_full_path,
+                        "pdf_extracted_text": pdf_extracted_text,
+                        "pdf_sentence":pdf_sentence,
+                        "pdf_sentence_embeddings":pdf_sentence_embeddings.tolist()
+                    })
+            except Exception as e : 
+                return Response({"message":"Invalid Request"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                if question_image:
+                    pdfs_collection.insert_one({
+                        "class_selected": class_selected,
+                        "subject_selected": subject_selected,
+                        "exam_id": exam_id,
+                        "question_image_path": question_image_full_path,
+                        "question_image_extracted_text": question_image_extracted_text,
+                        "question_sentence":question_sentence,
+                        "question_sentence_embeddings":question_sentence_embeddings.tolist()
+                    })
+
+            except Exception as e : 
+                return Response({"message":"Error while inserting questoins in db"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             return Response({"message": "Files uploaded successfully.", **response_data}, status=200)
 
@@ -122,7 +136,20 @@ class UserUploadAnswer(APIView):
             answer_image_path = fs.save(answer_image.name, answer_image)
             answer_image_full_path = fs.path(answer_image_path)
 
-            return  Response({'message': 'Answer Uploaded and Analyzed Sucessfully'}, status=status.HTTP_200_OK)
+            # ritu
+            try:
+                extracted_text = extract_text_from_pdf(answer_image_full_path)
+                sentences, sentence_embeddings = get_paragraph_embedding(extracted_text)
+                answers_embeddings_collection = get_collection("answers")
+                answers_embeddings_collection.insert_one({
+                    "answer_image_path": answer_image_full_path,
+                    "extracted_text": extracted_text,
+                    "embeddings": sentence_embeddings.tolist()
+                })
+
+                return  Response({'message': 'Answer Uploaded and Analyzed Sucessfully'}, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"message": f"An error occurred while creating embeddings : {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else :
             return Response({"message":"Invalid Request"},status=status.HTTP_400_BAD_REQUEST)
         
@@ -144,8 +171,7 @@ def upload_files(request):
         result = process_uploaded_files(pdf_file_full_path, question_image_full_path, answer_image_full_path)
         return render(request, 'qa/result.html', {'result': result})
 
-    else:
-        return render(request, 'qa/upload.html')
+    return render(request, 'qa/upload.html')
     
     
 class ClassListCreateAPI(APIView):
@@ -190,9 +216,7 @@ class SubjectListCreateAPI(APIView):
 class AnswerUploadAPI(APIView):
     def post(self, request):
         try:
-            print(request.data)
             roll_no = request.data.get('rollNo')
-            print("roll_no",roll_no)
             exam_id = request.data.get('examId')
             class_id = request.data.get('classId')
             subject = request.data.get('subject')
@@ -217,6 +241,11 @@ class AnswerUploadAPI(APIView):
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
             pdf_file_full_path = fs.path(pdf_file_path)
 
+            # ritu
+            extracted_text = extract_text_from_pdf(pdf_file_full_path)
+            sentences, sentence_embeddings = get_paragraph_embedding(extracted_text)
+
+
             answers_collection = get_collection("answers")
             answers_collection.insert_one({
                 "roll_no": roll_no,
@@ -224,6 +253,10 @@ class AnswerUploadAPI(APIView):
                 "class_id": class_id,
                 "subject": subject,
                 "pdf_file_path": pdf_file_full_path,
+                "extracted_text": extracted_text,
+                "sentence_embeddings": sentence_embeddings.tolist(),
+                "sentences":sentences
+                
             })
         except Exception as e :
             return Response({"message":"Bad Request"} , status=status.HTTP_501_NOT_IMPLEMENTED)
