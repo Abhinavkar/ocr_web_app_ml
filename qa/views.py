@@ -171,8 +171,7 @@ def upload_files(request):
         result = process_uploaded_files(pdf_file_full_path, question_image_full_path, answer_image_full_path)
         return render(request, 'qa/result.html', {'result': result})
 
-    else:
-        return render(request, 'qa/upload.html')
+    return render(request, 'qa/upload.html')
     
     
 class ClassListCreateAPI(APIView):
