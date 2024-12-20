@@ -58,7 +58,8 @@ class AdminPdfUpload(APIView):
             if question_image:
                 print("Creating Embeddings for question")
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
-                question_sentence , question_sentence_embeddings = get_paragraph_embedding(question_image_extracted_text)
+                # question_sentence , question_sentence_embeddings = get_paragraph_embedding(question_image_extracted_text)
+
                 response_data["question_image_extracted_text"] = question_image_extracted_text
 
             pdfs_collection = get_collection("pdf_questions")
@@ -83,8 +84,8 @@ class AdminPdfUpload(APIView):
                         "exam_id": exam_id,
                         "question_image_path": question_image_full_path,
                         "question_image_extracted_text": question_image_extracted_text,
-                        "question_sentence":question_sentence,
-                        "question_sentence_embeddings":question_sentence_embeddings.tolist()
+                        # "question_sentence":question_sentence,
+                        # "question_sentence_embeddings":question_sentence_embeddings.tolist()
                     })
 
             except Exception as e : 
