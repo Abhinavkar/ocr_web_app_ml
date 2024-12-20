@@ -49,33 +49,46 @@ class AdminPdfUpload(APIView):
             question_image_extracted_text = None
 
             if pdf_file:
+                print("Creating Embeddings for pdf")
                 pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
                 pdf_sentence,pdf_sentence_embeddings = get_paragraph_embedding(pdf_extracted_text)
 
+                
 
             if question_image:
+                print("Creating Embeddings for question")
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
-
+                question_sentence , question_sentence_embeddings = get_paragraph_embedding(question_image_extracted_text)
                 response_data["question_image_extracted_text"] = question_image_extracted_text
 
             pdfs_collection = get_collection("pdf_questions")
-            
-            if pdf_file and question_image:
-                pdfs_collection.insert_one({
-                    "class_selected": class_selected,
-                    "subject_selected": subject_selected,
-                    "exam_id": exam_id,
-                    "pdf_file_path": pdf_file_full_path,
-                    "pdf_extracted_text": pdf_extracted_text,
-                })
-            if question_image:
-                pdfs_collection.insert_one({
-                    "class_selected": class_selected,
-                    "subject_selected": subject_selected,
-                    "exam_id": exam_id,
-                    "question_image_path": question_image_full_path,
-                    "question_image_extracted_text": question_image_extracted_text,
-                })
+            try:
+                if pdf_file and question_image:
+                    pdfs_collection.insert_one({
+                        "class_selected": class_selected,
+                        "subject_selected": subject_selected,
+                        "exam_id": exam_id,
+                        "pdf_file_path": pdf_file_full_path,
+                        "pdf_extracted_text": pdf_extracted_text,
+                        "pdf_sentence":pdf_sentence,
+                        "pdf_sentence_embeddings":pdf_sentence_embeddings.tolist()
+                    })
+            except Exception as e : 
+                return Response({"message":"Invalid Request"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                if question_image:
+                    pdfs_collection.insert_one({
+                        "class_selected": class_selected,
+                        "subject_selected": subject_selected,
+                        "exam_id": exam_id,
+                        "question_image_path": question_image_full_path,
+                        "question_image_extracted_text": question_image_extracted_text,
+                        "question_sentence":question_sentence,
+                        "question_sentence_embeddings":question_sentence_embeddings.tolist()
+                    })
+
+            except Exception as e : 
+                return Response({"message":"Error while inserting questoins in db"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             return Response({"message": "Files uploaded successfully.", **response_data}, status=200)
 
@@ -204,9 +217,7 @@ class SubjectListCreateAPI(APIView):
 class AnswerUploadAPI(APIView):
     def post(self, request):
         try:
-            print(request.data)
             roll_no = request.data.get('rollNo')
-            print("roll_no",roll_no)
             exam_id = request.data.get('examId')
             class_id = request.data.get('classId')
             subject = request.data.get('subject')
