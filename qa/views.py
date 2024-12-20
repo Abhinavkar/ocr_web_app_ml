@@ -23,8 +23,6 @@ class AdminPdfUpload(APIView):
         subject_selected = request.data.get('subject_selected')
         pdf_file = request.FILES.get('pdf') 
         exam_id = request.data.get('exam_id')
-
-
         question_image = request.FILES.get('question_image')  
         if not class_selected or not subject_selected:
             return Response({"message": "Class and Subject must be selected."}, status=400)
@@ -211,10 +209,22 @@ class AnswerUploadAPI(APIView):
             class_id = request.data.get('class_id')
             subject = request.data.get('subject')
             pdf_file = request.FILES.get('pdf')
-
-            if not all([roll_no, exam_id, class_id, subject, pdf_file]):
-                return Response({"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
-
+            print(roll_no)
+            if not roll_no: 
+                return Response({"error": "Roll fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not  exam_id: 
+                return Response({"error": "Exam field are required "}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not class_id: 
+                return Response({"error": "Class id is required  "}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if  not subject: 
+                return Response({"error": "Subject field is reqired"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not pdf_file: 
+                return Response({"error": "Pdf is Required"}, status=status.HTTP_400_BAD_REQUEST)
+            
             fs = FileSystemStorage()
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
             pdf_file_full_path = fs.path(pdf_file_path)
