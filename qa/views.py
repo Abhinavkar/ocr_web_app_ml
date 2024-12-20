@@ -204,9 +204,11 @@ class SubjectListCreateAPI(APIView):
 class AnswerUploadAPI(APIView):
     def post(self, request):
         try:
-            roll_no = request.data.get('roll_no')
-            exam_id = request.data.get('exam_id')
-            class_id = request.data.get('class_id')
+            print(request.data)
+            roll_no = request.data.get('rollNo')
+            print("roll_no",roll_no)
+            exam_id = request.data.get('examId')
+            class_id = request.data.get('classId')
             subject = request.data.get('subject')
             pdf_file = request.FILES.get('pdf')
             print(roll_no)
