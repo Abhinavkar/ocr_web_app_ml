@@ -5,6 +5,8 @@ import pdfplumber
 import os
 import re
 from django.conf import settings
+from authentication.db_wrapper import get_collection
+
 
 model = SentenceTransformer('BAAI/bge-large-en-v1.5')
 
@@ -133,6 +135,17 @@ def ask_question(paragraph, user_question, user_answer=None):
         else:
             answer_relevance = "Your answer does not closely match the reference answer."
 
+        result = {
+        "user_question": user_question,
+        "user_answer": user_answer,
+        "best_match_sentence": best_match_sentence.strip(),
+        "similarity_score": best_match_score,
+        "answer_similarity_score": answer_similarity_score,
+        "answer_relevance": answer_relevance
+    }
+    store_embeddings_and_results(paragraph, sentences, sentence_embeddings, result)
+
+
     return best_match_sentence.strip(), best_match_score, answer_similarity_score, answer_relevance
 
 def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path):
@@ -152,3 +165,14 @@ def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path
 
     return results
 
+# made changes to this function
+def store_embeddings_and_results(paragraph, sentences, embeddings, results):
+    embeddings_collection = get_collection("embeddings")
+    results_collection = get_collection("results")
+    embeddings_collection.insert_one({
+        "paragraph": paragraph,
+        "sentences": sentences,
+        "embeddings": embeddings.tolist()
+    })
+    results_collection.insert_one(results)
+    print("Embeddings and results stored successfully.")

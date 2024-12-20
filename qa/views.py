@@ -10,7 +10,8 @@ from rest_framework import generics, status
 from .utils import *
 from authentication.db_wrapper import get_collection
 
-from .utils import extract_text_from_pdf, extract_questions_from_image
+from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
+from sentence_transformers import util
 
 
 fs = FileSystemStorage() 
@@ -124,7 +125,20 @@ class UserUploadAnswer(APIView):
             answer_image_path = fs.save(answer_image.name, answer_image)
             answer_image_full_path = fs.path(answer_image_path)
 
-            return  Response({'message': 'Answer Uploaded and Analyzed Sucessfully'}, status=status.HTTP_200_OK)
+            # ritu
+            try:
+                extracted_text = extract_text_from_pdf(answer_image_full_path)
+                sentences, sentence_embeddings = get_paragraph_embedding(extracted_text)
+                answers_embeddings_collection = get_collection("answers")
+                answers_embeddings_collection.insert_one({
+                    "answer_image_path": answer_image_full_path,
+                    "extracted_text": extracted_text,
+                    "embeddings": sentence_embeddings.tolist()
+                })
+
+                return  Response({'message': 'Answer Uploaded and Analyzed Sucessfully'}, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"message": f"An error occurred while creating embeddings : {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else :
             return Response({"message":"Invalid Request"},status=status.HTTP_400_BAD_REQUEST)
         
@@ -205,6 +219,11 @@ class AnswerUploadAPI(APIView):
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
             pdf_file_full_path = fs.path(pdf_file_path)
 
+            # ritu
+            extracted_text = extract_text_from_pdf(pdf_file_full_path)
+            sentences, sentence_embeddings = get_paragraph_embedding(extracted_text)
+
+
             answers_collection = get_collection("answers")
             answers_collection.insert_one({
                 "roll_no": roll_no,
@@ -212,6 +231,9 @@ class AnswerUploadAPI(APIView):
                 "class_id": class_id,
                 "subject": subject,
                 "pdf_file_path": pdf_file_full_path,
+                # ritu
+                "extracted_text": extracted_text,
+                "embeddings": sentence_embeddings.tolist()
             })
         except Exception as e :
             return Response({"message":"Bad Request"} , status=status.HTTP_501_NOT_IMPLEMENTED)
