@@ -12,7 +12,7 @@ from authentication.db_wrapper import get_collection
 
 from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
 from sentence_transformers import util
-
+ 
 
 fs = FileSystemStorage() 
 
@@ -241,9 +241,10 @@ class AnswerUploadAPI(APIView):
                 "class_id": class_id,
                 "subject": subject,
                 "pdf_file_path": pdf_file_full_path,
-                # ritu
                 "extracted_text": extracted_text,
-                "embeddings": sentence_embeddings.tolist()
+                "sentence_embeddings": sentence_embeddings.tolist(),
+                "sentences":sentences
+                
             })
         except Exception as e :
             return Response({"message":"Bad Request"} , status=status.HTTP_501_NOT_IMPLEMENTED)
