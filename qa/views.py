@@ -211,7 +211,7 @@ class AnswerUploadAPI(APIView):
             
             if pdf_file: 
                 return Response({"error": "Pdf is Required"}, status=status.HTTP_400_BAD_REQUEST)
-
+            
             fs = FileSystemStorage()
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
             pdf_file_full_path = fs.path(pdf_file_path)
