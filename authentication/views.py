@@ -10,17 +10,27 @@ from .models import User
 class RegisterAdminUserView(APIView):
     def post(self, request):
         data = request.data
-        if User.objects.filter(username=data["username"]).exists():
+        users_collection = get_collection("auth_users")  # MongoDB collection for users
+
+        # Check if the username already exists
+        if users_collection.find_one({"username": data["username"]}):
             return Response({"error": "Admin already exists"}, status=400)
+
+        # Hash the password
         hashed_password = make_password(data["password"])
-        user = User.objects.create(
-            username=data["username"],
-            password=hashed_password,
-            is_admin=True,
-            is_superuser=True,
-            is_staff=True
-        )
-        user.save()
+
+        # Create the admin user document
+        admin_user = {
+            "username": data["username"],
+            "password": hashed_password,
+            "is_admin": True,
+            "is_superuser": True,
+            "is_staff": True,
+        }
+
+        # Insert the admin user into MongoDB
+        users_collection.insert_one(admin_user)
+
         return Response({"message": "Admin registered successfully"}, status=201)
 
 

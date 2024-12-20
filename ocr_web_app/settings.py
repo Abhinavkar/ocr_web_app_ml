@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
-
+from pymongo import MongoClient
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -175,21 +175,7 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# DATABASES = {
-#     "default":{
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'ocr_db',
-#         'USER': 'postgres',
-#         'PASSWORD': '123123',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
 
-#     }
-
-# }
-
-
-from pymongo import MongoClient
 
 # MongoDB Configuration
 MONGO_URI = "mongodb+srv://ritu:12345@model.5hsae.mongodb.net/?retryWrites=true&w=majority&appName=model"
