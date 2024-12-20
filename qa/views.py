@@ -197,9 +197,20 @@ class AnswerUploadAPI(APIView):
             class_id = request.data.get('class_id')
             subject = request.data.get('subject')
             pdf_file = request.FILES.get('pdf')
-
-            if not all([roll_no, exam_id, class_id, subject, pdf_file]):
-                return Response({"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+            if roll_no: 
+                return Response({"error": "Roll fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if exam_id: 
+                return Response({"error": "Exam field are required "}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if class_id: 
+                return Response({"error": "Class id is required  "}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if subject: 
+                return Response({"error": "Subject field is reqired"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if pdf_file: 
+                return Response({"error": "Pdf is Required"}, status=status.HTTP_400_BAD_REQUEST)
 
             fs = FileSystemStorage()
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
