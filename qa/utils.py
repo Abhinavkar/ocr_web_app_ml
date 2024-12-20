@@ -1,7 +1,3 @@
-
-import nltk
-import string
-import re
 from sentence_transformers import SentenceTransformer, util
 from together import Together
 import base64
@@ -9,36 +5,12 @@ import pdfplumber
 import os
 import re
 from django.conf import settings
-from authentication.db_wrapper import get_collection
-
 
 model = SentenceTransformer('BAAI/bge-large-en-v1.5')
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 
 api_key = "353a19336b7e42fe5e8f4645074618f8a7a4e0eefcee7a5047f6d7c86a2b6e1f"
 client = Together(api_key=api_key)
 
-nltk.download('stopwords')
-nltk.download('punkt')
-
-
-auxiliary_words = {
-    "am", "is", "are", "was", "were", "be", "being", "been", 
-    "have", "has", "had", "do", "does", "did", "will", "would", 
-    "shall", "should", "may", "might", "must", "can", "could"
-}
-stop_words = set(stopwords.words('english')).union(auxiliary_words)
-
-def clean_text(text):
-    """
-    Remove stopwords and punctuation from the input text.
-    """
-    tokens = word_tokenize(text.lower())  
-    filtered_tokens = [
-        word for word in tokens if word not in stop_words and word not in string.punctuation
-    ]
-    return " ".join(filtered_tokens)
 
 def extract_text_from_pdf(pdf_path):
     """
@@ -51,6 +23,7 @@ def extract_text_from_pdf(pdf_path):
     except Exception as e:
         return f"Error extracting text from PDF: {str(e)}"
 
+
 def encode_image_to_base64(image_path):
     """
     Encode an image file to a base64 string.
@@ -58,55 +31,44 @@ def encode_image_to_base64(image_path):
     try:
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
-        print(f"Encoded Image Length: {len(encode_image_to_base64)}")
-
     except FileNotFoundError:
         return None
+
 
 def extract_text_from_image(image_path, prompt):
     """
     Extract text from an image using Together's Vision-Instruct-Turbo model.
     """
     print("Processing the image... Please wait.")
+
     base64_image = encode_image_to_base64(image_path)
     if not base64_image:
         return "Error: Image file not found."
-    print("Sending image for OCR...")
-   
+
     stream = client.chat.completions.create(
-                model="meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
-                messages=[
-                    {"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]
-                    }
-                ],
-                stream=True,
-     )
+        model="meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+        messages=[
+            {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}
+        ],
+        stream=True,
+    )
 
     extracted_text = ""
     for chunk in stream:
         if chunk.choices and chunk.choices[0].delta.content:
             extracted_text += chunk.choices[0].delta.content
 
-   
+    return extracted_text.strip()
+
+
 def extract_questions_from_image(image_path):
     """
     Extract questions from an image and index them.
     """
-    ocr_prompt = (
-    "Analyze the given image to identify and extract all handwritten or printed text. "
-    "I want only the questions in the output. If there are multiple questions, "
-    "index each distinct point sequentially."
-)
+    ocr_prompt = "Analyze the given image to identify and extract all handwritten text. I want only the questions in the output. If there are multiple questions, index each distinct point sequentially."
     extracted_text = extract_text_from_image(image_path, ocr_prompt)
 
     
-
-    print("Raw OCR Extracted Text:", extracted_text)
-
-    if not extracted_text or "Error" in extracted_text:
-        return "Error: No questions found in the image."
 
     # Use regex to find numbered questions
     questions = re.findall(r'\d+\.\s+(.*?)(?=\d+\.\s|$)', extracted_text, re.DOTALL)
@@ -118,7 +80,7 @@ def extract_questions_from_image(image_path):
 
 def extract_answers_from_image(image_path):
     """
-    Extract answers from the uploaded image.
+    Extract answers from an image and index them.
     """
     ocr_prompt = "Analyze the given image to identify and extract all handwritten text. I want only the answer in the output. If there are multiple answers , index each distinct point sequentially."
     extracted_text = extract_text_from_image(image_path, ocr_prompt)
@@ -171,17 +133,6 @@ def ask_question(paragraph, user_question, user_answer=None):
         else:
             answer_relevance = "Your answer does not closely match the reference answer."
 
-        result = {
-        "user_question": user_question,
-        "user_answer": user_answer,
-        "best_match_sentence": best_match_sentence.strip(),
-        "similarity_score": best_match_score,
-        "answer_similarity_score": answer_similarity_score,
-        "answer_relevance": answer_relevance
-    }
-    store_embeddings_and_results(paragraph, sentences, sentence_embeddings, result)
-
-
     return best_match_sentence.strip(), best_match_score, answer_similarity_score, answer_relevance
 
 def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path):
@@ -195,20 +146,9 @@ def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path
     for question_label, user_question in questions.items():
         answer_label = question_label.replace("Question", "Answer")
         user_answer = answers.get(answer_label, "")
-        result = ask_question(cleaned_paragraph, user_question, user_answer)
+        result = ask_question(paragraph, user_question, user_answer)
         results.append({'question_label': question_label, 'result': result})
         
 
     return results
 
-# made changes to this function
-def store_embeddings_and_results(paragraph, sentences, embeddings, results):
-    embeddings_collection = get_collection("embeddings")
-    results_collection = get_collection("results")
-    embeddings_collection.insert_one({
-        "paragraph": paragraph,
-        "sentences": sentences,
-        "embeddings": embeddings.tolist()
-    })
-    results_collection.insert_one(results)
-    print("Embeddings and results stored successfully.")
