@@ -29,7 +29,7 @@ class AdminPdfUpload(APIView):
     def post(self, request):     
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
-        pdf_file = request.FILES.get('pdf') 
+        pdf_file = request.FILES.get('course_pdf') 
         exam_id = request.data.get('exam_id')
         question_image = request.FILES.get('question_image')  
         if not class_selected or not subject_selected:
