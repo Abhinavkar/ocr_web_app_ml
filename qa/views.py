@@ -80,7 +80,7 @@ class AdminPdfUpload(APIView):
                 else:
                     print("The extracted text is not a dictionary.")
                     
-            print(pdf_file.name)
+            # print(pdf_file.name)
 
             pdfs_collection = get_collection("pdf_questions")
             try:
@@ -89,7 +89,7 @@ class AdminPdfUpload(APIView):
                         "class_selected": class_selected,
                         "subject_selected": subject_selected,
                         "exam_id": exam_id,
-                        "pdf_file_name": pdf_file.name,
+                        # "pdf_file_name": pdf_file.name,
                         "pdf_file_path": pdf_file_full_path,
                         "pdf_extracted_text": pdf_extracted_text,
                         "pdf_sentence":pdf_sentence,
