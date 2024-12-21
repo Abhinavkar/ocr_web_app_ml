@@ -63,6 +63,8 @@ class AdminPdfUpload(APIView):
                     response_data["question_image_extracted_text"] = question_image_extracted_text
                 else:
                     print("The extracted text is not a dictionary.")
+                    
+            print(pdf_file.name)
 
             pdfs_collection = get_collection("pdf_questions")
             question_collection=get_collection("questions_collection")
@@ -103,19 +105,8 @@ class AdminPdfGetUpload(APIView):
     def get(self, request):
         try:
             pdfs_collection = get_collection("pdf_questions")
-            pdfs = pdfs_collection.find({"pdf_file_path": {"$exists": True}})
-            pdf_data = [
-                {
-                    "id": str(pdf["_id"]),
-                    "class_selected": pdf["class_selected"],
-                    "subject_selected": pdf["subject_selected"],
-                    "pdf_file_path": pdf["pdf_file_path"],
-                    "pdf_extracted_text": pdf.get("pdf_extracted_text"),
-                }
-                for pdf in pdfs
-            ]
-
-            return Response({"pdfs": pdf_data}, status=status.HTTP_200_OK)
+            print(pdfs_collection)
+            # return Response({"pdfs": pdf_data}, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
