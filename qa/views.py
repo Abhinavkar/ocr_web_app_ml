@@ -12,7 +12,7 @@ from authentication.db_wrapper import get_collection
 
 from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
 from sentence_transformers import util
- 
+import ast 
 
 fs = FileSystemStorage() 
 
@@ -58,9 +58,19 @@ class AdminPdfUpload(APIView):
             if question_image:
                 print("Creating Embeddings for question")
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
-                # question_sentence , question_sentence_embeddings = get_paragraph_embedding(question_image_extracted_text)
+                # Check the type of the extracted text
+                print("Type of extracted text:", type(question_image_extracted_text))
 
-                response_data["question_image_extracted_text"] = question_image_extracted_text
+                if isinstance(question_image_extracted_text, dict):
+                    print("Extracted question dictionary:", question_image_extracted_text)
+                    list_of_tuples = list(question_image_extracted_text.items())
+                    print("List of tuples:", list_of_tuples)
+                    question_sentence = " ".join([f"{key}: {value}" for key, value in list_of_tuples])
+                    print("Combined question sentence:", question_sentence)
+                    question_sentence, question_sentence_embeddings = get_paragraph_embedding(question_sentence)
+                    response_data["question_image_extracted_text"] = question_image_extracted_text
+                else:
+                    print("The extracted text is not a dictionary.")
 
             pdfs_collection = get_collection("pdf_questions")
             try:
@@ -84,8 +94,8 @@ class AdminPdfUpload(APIView):
                         "exam_id": exam_id,
                         "question_image_path": question_image_full_path,
                         "question_image_extracted_text": question_image_extracted_text,
-                        # "question_sentence":question_sentence,
-                        # "question_sentence_embeddings":question_sentence_embeddings.tolist()
+                        "question_sentence":question_sentence,
+                        "question_sentence_embeddings":question_sentence_embeddings.tolist()
                     })
 
             except Exception as e : 
