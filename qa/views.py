@@ -79,19 +79,11 @@ class AdminPdfUpload(APIView):
                         "class_selected": class_selected,
                         "subject_selected": subject_selected,
                         "exam_id": exam_id,
+                        "pdf_file_name": pdf_file.name,
                         "pdf_file_path": pdf_file_full_path,
                         "pdf_extracted_text": pdf_extracted_text,
                         "pdf_sentence":pdf_sentence,
-                        "pdf_sentence_embeddings":pdf_sentence_embeddings.tolist()
-                    })
-            except Exception as e : 
-                return Response({"message":"Invalid Request"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try:
-                if question_image:
-                    pdfs_collection.insert_one({
-                        "class_selected": class_selected,
-                        "subject_selected": subject_selected,
-                        "exam_id": exam_id,
+                        "pdf_sentence_embeddings":pdf_sentence_embeddings.tolist(),
                         "question_image_path": question_image_full_path,
                         "question_image_extracted_text": question_image_extracted_text,
                         "question_sentence":question_sentence,
