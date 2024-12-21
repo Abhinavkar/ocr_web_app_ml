@@ -98,38 +98,28 @@ class AdminPdfUpload(APIView):
 
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-
+        
+class AdminPdfGetUpload(APIView):
     def get(self, request):
-       
-        pdfs_collection = get_collection("pdfs")
-        questions_collection = get_collection("questions")
+        try:
+            pdfs_collection = get_collection("pdf_questions")
+            pdfs = pdfs_collection.find({"pdf_file_path": {"$exists": True}})
+            pdf_data = [
+                {
+                    "id": str(pdf["_id"]),
+                    "class_selected": pdf["class_selected"],
+                    "subject_selected": pdf["subject_selected"],
+                    "pdf_file_path": pdf["pdf_file_path"],
+                    "pdf_extracted_text": pdf.get("pdf_extracted_text"),
+                }
+                for pdf in pdfs
+            ]
 
-        pdfs = list(pdfs_collection.find({}))
-        questions = list(questions_collection.find({}))
-        pdf_data = []
-        for pdf in pdfs:
-            pdf_data.append({
-                "id": str(pdf["_id"]),
-                "class_selected": pdf["class_selected"],
-                "subject_selected": pdf["subject_selected"],
-                "pdf_file_path": pdf["pdf_file_path"],
-                "pdf_extracted_text": pdf.get("pdf_extracted_text")
-            })
+            return Response({"pdfs": pdf_data}, status=status.HTTP_200_OK)
 
-        question_data = []
-        for question in questions:
-            question_data.append({
-                "id": str(question["_id"]),
-                "class_selected": question["class_selected"],
-                "subject_selected": question["subject_selected"],
-                "question_image_path": question["question_image_path"],
-                "question_image_extracted_text": question.get("question_image_extracted_text")
-               
-            })
-        return Response({"pdfs": pdf_data,"questions": question_data}, status=status.HTTP_200_OK)
-    
-        
-        
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
 
 class UserUploadAnswer(APIView):
      # permission_classes = [IsAuthenticated, IsAdminUser]
@@ -266,3 +256,5 @@ class AnswerUploadAPI(APIView):
             return Response({"message":"Bad Request"} , status=status.HTTP_501_NOT_IMPLEMENTED)
 
         return Response({"message": "Answer uploaded successfully"}, status=status.HTTP_201_CREATED)
+
+
