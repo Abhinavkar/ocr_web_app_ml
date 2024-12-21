@@ -11,6 +11,8 @@ from .utils import *
 from authentication.db_wrapper import get_collection
 
 from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
+from sentence_transformers import util
+import ast 
 
 fs = FileSystemStorage() 
 class AdminPdfGetUpload(APIView):
@@ -27,7 +29,7 @@ class AdminPdfUpload(APIView):
     def post(self, request):     
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
-        pdf_file = request.FILES.get('course_pdf') 
+        pdf_file = request.FILES.get('pdf') 
         exam_id = request.data.get('exam_id')
         question_image = request.FILES.get('question_image')  
         if not class_selected or not subject_selected:
@@ -35,11 +37,9 @@ class AdminPdfUpload(APIView):
         response_data = {"class": class_selected, "subject": subject_selected}
         fs = FileSystemStorage()
         if pdf_file:
-
             if not pdf_file.name.endswith('.pdf'):
                 return Response({"message": "Only PDF files are allowed for course PDF."}, status=400)
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
-
             pdf_file_full_path = fs.path(pdf_file_path)
             response_data["course_pdf_url"] = pdf_file_full_path
         if question_image:
@@ -57,42 +57,43 @@ class AdminPdfUpload(APIView):
             question_image_extracted_text = None
 
             if pdf_file:
+                print("Creating Embeddings for pdf")
                 pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
                 pdf_sentence,pdf_sentence_embeddings = get_paragraph_embedding(pdf_extracted_text)
 
+                
 
             if question_image:
+                print("Creating Embeddings for question")
                 question_image_extracted_text = extract_questions_from_image(question_image_full_path)
+                # Check the type of the extracted text
+                print("Type of extracted text:", type(question_image_extracted_text))
 
                 if isinstance(question_image_extracted_text, dict):
+                    print("Extracted question dictionary:", question_image_extracted_text)
                     list_of_tuples = list(question_image_extracted_text.items())
+                    print("List of tuples:", list_of_tuples)
                     question_sentence = " ".join([f"{key}: {value}" for key, value in list_of_tuples])
+                    print("Combined question sentence:", question_sentence)
                     question_sentence, question_sentence_embeddings = get_paragraph_embedding(question_sentence)
                     response_data["question_image_extracted_text"] = question_image_extracted_text
                 else:
                     print("The extracted text is not a dictionary.")
+                    
+            print(pdf_file.name)
 
             pdfs_collection = get_collection("pdf_questions")
-            question_collection=get_collection("questions_collection")
             try:
-                if pdf_file :
+                if pdf_file and question_image:
                     pdfs_collection.insert_one({
                         "class_selected": class_selected,
                         "subject_selected": subject_selected,
                         "exam_id": exam_id,
+                        "pdf_file_name": pdf_file.name,
                         "pdf_file_path": pdf_file_full_path,
                         "pdf_extracted_text": pdf_extracted_text,
                         "pdf_sentence":pdf_sentence,
-                        "pdf_sentence_embeddings":pdf_sentence_embeddings.tolist()
-                    })
-            except Exception as e : 
-                return Response({"message":"Invalid Request"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try:
-                if question_image:
-                    question_collection.insert_one({
-                        "class_selected": class_selected,
-                        "subject_selected": subject_selected,
-                        "exam_id": exam_id,
+                        "pdf_sentence_embeddings":pdf_sentence_embeddings.tolist(),
                         "question_image_path": question_image_full_path,
                         "question_image_extracted_text": question_image_extracted_text,
                         "question_sentence":question_sentence,
@@ -106,38 +107,17 @@ class AdminPdfUpload(APIView):
 
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-
+        
+class AdminPdfGetUpload(APIView):
     def get(self, request):
-       
-        pdfs_collection = get_collection("pdfs")
-        questions_collection = get_collection("questions")
+        try:
+            pdfs_collection = get_collection("pdf_questions")
+            print(pdfs_collection)
+            return Response({"pdfs": "Success"}, status=status.HTTP_200_OK)
 
-        pdfs = list(pdfs_collection.find({}))
-        questions = list(questions_collection.find({}))
-        pdf_data = []
-        for pdf in pdfs:
-            pdf_data.append({
-                "id": str(pdf["_id"]),
-                "class_selected": pdf["class_selected"],
-                "subject_selected": pdf["subject_selected"],
-                "pdf_file_path": pdf["pdf_file_path"],
-                "pdf_extracted_text": pdf.get("pdf_extracted_text")
-            })
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
 
-        question_data = []
-        for question in questions:
-            question_data.append({
-                "id": str(question["_id"]),
-                "class_selected": question["class_selected"],
-                "subject_selected": question["subject_selected"],
-                "question_image_path": question["question_image_path"],
-                "question_image_extracted_text": question.get("question_image_extracted_text")
-               
-            })
-        return Response({"pdfs": pdf_data,"questions": question_data}, status=status.HTTP_200_OK)
-    
-        
-        
 
 class UserUploadAnswer(APIView):
      # permission_classes = [IsAuthenticated, IsAdminUser]
@@ -274,3 +254,5 @@ class AnswerUploadAPI(APIView):
             return Response({"message":"Bad Request"} , status=status.HTTP_501_NOT_IMPLEMENTED)
 
         return Response({"message": "Answer uploaded successfully"}, status=status.HTTP_201_CREATED)
+
+
