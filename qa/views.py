@@ -13,7 +13,15 @@ from authentication.db_wrapper import get_collection
 from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
 
 fs = FileSystemStorage() 
+class AdminPdfGetUpload(APIView):
+    def get(self, request):
+        try:
+            pdfs_collection = get_collection("pdf_questions")
+            print(pdfs_collection)
+            # return Response({"pdfs": pdf_data}, status=status.HTTP_200_OK)
 
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
        
 class AdminPdfUpload(APIView):
     def post(self, request):     
