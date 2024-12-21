@@ -70,11 +70,8 @@ class AdminPdfUpload(APIView):
                 print("Type of extracted text:", type(question_image_extracted_text))
 
                 if isinstance(question_image_extracted_text, dict):
-                    print("Extracted question dictionary:", question_image_extracted_text)
                     list_of_tuples = list(question_image_extracted_text.items())
-                    print("List of tuples:", list_of_tuples)
                     question_sentence = " ".join([f"{key}: {value}" for key, value in list_of_tuples])
-                    print("Combined question sentence:", question_sentence)
                     question_sentence, question_sentence_embeddings = get_paragraph_embedding(question_sentence)
                     response_data["question_image_extracted_text"] = question_image_extracted_text
                 else:
