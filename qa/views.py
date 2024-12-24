@@ -210,20 +210,23 @@ class AnswerUploadAPI(APIView):
             class_id = request.data.get('classId')
             subject = request.data.get('subject')
             pdf_file = request.FILES.get('pdf')
-            print(roll_no)
             if not roll_no: 
+                print("Issue in roll no ")
                 return Response({"error": "Roll fields are required"}, status=status.HTTP_400_BAD_REQUEST)
-            
             if not  exam_id: 
+                print("Issue in roll no ")
                 return Response({"error": "Exam field are required "}, status=status.HTTP_400_BAD_REQUEST)
             
             if not class_id: 
+                print("Issue in classid ")
                 return Response({"error": "Class id is required  "}, status=status.HTTP_400_BAD_REQUEST)
             
             if  not subject: 
+                print("Issue in sub ")
                 return Response({"error": "Subject field is reqired"}, status=status.HTTP_400_BAD_REQUEST)
             
             if not pdf_file: 
+                print("Issue in pdf")
                 return Response({"error": "Pdf is Required"}, status=status.HTTP_400_BAD_REQUEST)
             
             fs = FileSystemStorage()
