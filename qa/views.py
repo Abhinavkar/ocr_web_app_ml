@@ -13,7 +13,7 @@ from authentication.db_wrapper import get_collection
 from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
 from sentence_transformers import util
 import ast 
-
+from qa.utils import process_uploaded_files
 fs = FileSystemStorage() 
 class AdminPdfGetUpload(APIView):
     def get(self, request):
@@ -105,43 +105,85 @@ class AdminPdfUpload(APIView):
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
         
+# class AdminPdfGetUpload(APIView):
+#     def get(self, request):
+#         try:
+#             pdfs_collection = get_collection("pdf_questions")
+#             print(pdfs_collection)
+#             return Response({"pdfs": "Success"}, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
 class AdminPdfGetUpload(APIView):
     def get(self, request):
         try:
+            # Connect to collections
             pdfs_collection = get_collection("pdf_questions")
-            print(pdfs_collection)
-            return Response({"pdfs": "Success"}, status=status.HTTP_200_OK)
+            classes_collection = get_collection("classes")
+            subjects_collection = get_collection("subjects")
+
+            # Fetch all classes and subjects
+            classes = list(classes_collection.find({}, {"_id": 1, "name": 1}))
+            subjects = list(subjects_collection.find({}, {"_id": 1, "name": 1}))
+
+            # Create ID-to-name mappings
+            class_map = {str(cls["_id"]): cls["name"] for cls in classes}
+            subject_map = {str(sub["_id"]): sub["name"] for sub in subjects}
+
+            # Fetch PDF records
+            pdf_data = list(pdfs_collection.find({}, {
+                "class_selected": 1,
+                "subject_selected": 1,
+                "pdf_file_path": 1,
+                "question_image_path": 1,
+                "_id": 0
+            }))
+
+            # Format response data with names instead of IDs
+            formatted_data = [
+                {
+                    "class": class_map.get(item["class_selected"], "Unknown Class"),
+                    "subject": subject_map.get(item["subject_selected"], "Unknown Subject"),
+                    "pdf_name": item.get("pdf_file_path", "").split("/")[-1],
+                    "question_name": item.get("question_image_path", "").split("/")[-1]
+                }
+                for item in pdf_data
+            ]
+
+            # Return the formatted response
+            return Response({"pdf_uploads": formatted_data}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 class UserUploadAnswer(APIView):
-     # permission_classes = [IsAuthenticated, IsAdminUser]
+    # permission_classes = [IsAuthenticated, IsAdminUser]
 
     def post(self, request):
-        if request.method == 'POST' and request.FILES['answer_image'] :
+        if request.method == 'POST' and request.FILES.get('answer_image'):
             answer_image = request.FILES['answer_image']
             answer_image_path = fs.save(answer_image.name, answer_image)
             answer_image_full_path = fs.path(answer_image_path)
 
-            # ritu
-            try:
-                extracted_text = extract_text_from_pdf(answer_image_full_path)
-                sentences, sentence_embeddings = get_paragraph_embedding(extracted_text)
-                answers_embeddings_collection = get_collection("answers")
-                answers_embeddings_collection.insert_one({
-                    "answer_image_path": answer_image_full_path,
-                    "extracted_text": extracted_text,
-                    "embeddings": sentence_embeddings.tolist()
-                })
+        try:
+            extracted_text = extract_text_from_pdf(answer_image_full_path)
+            sentences, sentence_embeddings = get_paragraph_embedding(extracted_text)
+            answers_embeddings_collection = get_collection("answers")
+            answers_embeddings_collection.insert_one({
+                "answer_image_path": answer_image_full_path,
+                "extracted_text": extracted_text,
+                "embeddings": sentence_embeddings.tolist()
+            })
 
-                return  Response({'message': 'Answer Uploaded and Analyzed Sucessfully'}, status=status.HTTP_200_OK)
-            except Exception as e:
-                return Response({"message": f"An error occurred while creating embeddings : {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else :
-            return Response({"message":"Invalid Request"},status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response({'message': 'Answer Uploaded and Analyzed Successfully'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"message": f"An error occurred while creating embeddings: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({"message": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @login_required
@@ -210,33 +252,80 @@ class AnswerUploadAPI(APIView):
             class_id = request.data.get('classId')
             subject = request.data.get('subject')
             pdf_file = request.FILES.get('pdf')
-            if not roll_no: 
-                print("Issue in roll no ")
+            answer_image = request.FILES.get('answer_image')
+            answer_pdf = request.FILES.get('answer_pdf')
+            fs = FileSystemStorage()
+
+            if not roll_no:
                 return Response({"error": "Roll fields are required"}, status=status.HTTP_400_BAD_REQUEST)
-            if not  exam_id: 
-                print("Issue in roll no ")
+            if not exam_id:
                 return Response({"error": "Exam field are required "}, status=status.HTTP_400_BAD_REQUEST)
-            
-            if not class_id: 
+            if not class_id:
                 print("Issue in classid ")
                 return Response({"error": "Class id is required  "}, status=status.HTTP_400_BAD_REQUEST)
-            
-            if  not subject: 
-                print("Issue in sub ")
+            if not subject:
                 return Response({"error": "Subject field is reqired"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            if not pdf_file: 
-                print("Issue in pdf")
+            if not pdf_file:
                 return Response({"error": "Pdf is Required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if not exam_id or (not answer_image and not answer_pdf):
+                return Response({"message": "Exam ID and at least one answer file are required."}, status=400)
+            try:
+
+                # pdfs_collection = get_collection("pdf_questions")
+                # exam_data = pdfs_collection.find_one({"exam_Id": exam_id})
+
+                answers_collection = get_collection("answers")
+                print("Checking for exam data in MongoDB...")
+                exam_data = answers_collection.find_one({"exam_id": exam_id})
+                
+            except Exception as e :
+                print(f"Error querying MongoDB: {e}")
+                return Response({"message" :"Internal serval Error"} ,status=500)
+
+            if not exam_data:
+                return Response({"message": "Exam not found."}, status=404)
             
-            fs = FileSystemStorage()
+            user_answers = {}
+            if answer_image: 
+                user_answers = extract_answers_from_image(fs.path(fs.save(answer_image.name, answer_image)))
+            elif answer_pdf:
+                answer_pdf_path = fs.path(fs.save(answer_pdf.name, answer_pdf))
+                user_answers_text = extract_text_from_pdf(answer_pdf_path)
+
+                user_answers_list = user_answers_text.split("\n\n")  #separated by double line breaks
+                user_answers = {f"Answer {i+1}": ans.strip() for i, ans in enumerate(user_answers_list)}
+
+                print ("User Answers:",user_answers)
+
+            answer_embeddings = {}
+            for answer_label, answer_text in user_answers.items():
+                embedding = model.encode(answer_text, convert_to_tensor=True).tolist()
+                answer_embeddings[answer_label] = embedding
+
+            results = []
+            sentences, sentence_embeddings = get_paragraph_embedding(exam_data['extracted_text'])
+
+            for question, user_answer in user_answers.items():
+                print(f"Processing {question}...")
+                best_sentence, match_score, answer_score, relevance = ask_question(
+                   exam_data['extracted_text'], user_answer, question
+                )
+                results.append({
+                    "question": question,
+                    "best_reference_sentence": best_sentence,
+                    "question_similarity_score": match_score,
+                    "answer_similarity_score": answer_score,
+                    "relevance": relevance,
+                })
+
+
+
             pdf_file_path = fs.save(pdf_file.name, pdf_file)
             pdf_file_full_path = fs.path(pdf_file_path)
-
-            # ritu
             extracted_text = extract_text_from_pdf(pdf_file_full_path)
             sentences, sentence_embeddings = get_paragraph_embedding(extracted_text)
-
+          
 
             answers_collection = get_collection("answers")
             answers_collection.insert_one({
@@ -247,11 +336,15 @@ class AnswerUploadAPI(APIView):
                 "pdf_file_path": pdf_file_full_path,
                 "extracted_text": extracted_text,
                 "sentence_embeddings": sentence_embeddings.tolist(),
-                "sentences":sentences
-                
+                "sentences": sentences,
+                "user_answers": user_answers,
+                "user_answer_embeddings": answer_embeddings,
+                "results": results
             })
-        except Exception as e :
-            return Response({"message":"Bad Request"} , status=status.HTTP_501_NOT_IMPLEMENTED)
+
+        except Exception as e:
+            print("Error occurred:", str(e))
+            return Response({"message": "Bad Request"}, status=status.HTTP_501_NOT_IMPLEMENTED)
 
         return Response({"message": "Answer uploaded successfully"}, status=status.HTTP_201_CREATED)
 
