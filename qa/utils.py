@@ -5,6 +5,9 @@ import pdfplumber
 import os
 import re
 from django.conf import settings
+# Use relative import if authentication is part of the same project
+from authentication.db_wrapper import get_collection
+
 
 model = SentenceTransformer('BAAI/bge-large-en-v1.5')
 
@@ -55,7 +58,7 @@ def extract_text_from_image(image_path, prompt):
 
     extracted_text = ""
     for chunk in stream:
-        if chunk.choices and chunk.choices[0].delta.content:
+        if (chunk.choices and chunk.choices[0].delta.content):
             extracted_text += chunk.choices[0].delta.content
 
     return extracted_text.strip()
@@ -132,6 +135,8 @@ def ask_question(paragraph, user_question, user_answer=None):
             answer_relevance = "Your answer is highly relevant!"
         else:
             answer_relevance = "Your answer does not closely match the reference answer."
+        # print(ask_question(paragraph,user_question,user_answer))
+
 
     return best_match_sentence.strip(), best_match_score, answer_similarity_score, answer_relevance
 
@@ -151,4 +156,3 @@ def process_uploaded_files(pdf_file_path, question_image_path, answer_image_path
         
 
     return results
-
