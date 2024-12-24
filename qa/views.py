@@ -105,15 +105,59 @@ class AdminPdfUpload(APIView):
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
         
+# class AdminPdfGetUpload(APIView):
+#     def get(self, request):
+#         try:
+#             pdfs_collection = get_collection("pdf_questions")
+#             print(pdfs_collection)
+#             return Response({"pdfs": "Success"}, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
 class AdminPdfGetUpload(APIView):
     def get(self, request):
         try:
+            # Connect to collections
             pdfs_collection = get_collection("pdf_questions")
-            print(pdfs_collection)
-            return Response({"pdfs": "Success"}, status=status.HTTP_200_OK)
+            classes_collection = get_collection("classes")
+            subjects_collection = get_collection("subjects")
+
+            # Fetch all classes and subjects
+            classes = list(classes_collection.find({}, {"_id": 1, "name": 1}))
+            subjects = list(subjects_collection.find({}, {"_id": 1, "name": 1}))
+
+            # Create ID-to-name mappings
+            class_map = {str(cls["_id"]): cls["name"] for cls in classes}
+            subject_map = {str(sub["_id"]): sub["name"] for sub in subjects}
+
+            # Fetch PDF records
+            pdf_data = list(pdfs_collection.find({}, {
+                "class_selected": 1,
+                "subject_selected": 1,
+                "pdf_file_path": 1,
+                "question_image_path": 1,
+                "_id": 0
+            }))
+
+            # Format response data with names instead of IDs
+            formatted_data = [
+                {
+                    "class": class_map.get(item["class_selected"], "Unknown Class"),
+                    "subject": subject_map.get(item["subject_selected"], "Unknown Subject"),
+                    "pdf_name": item.get("pdf_file_path", "").split("/")[-1],
+                    "question_name": item.get("question_image_path", "").split("/")[-1]
+                }
+                for item in pdf_data
+            ]
+
+            # Return the formatted response
+            return Response({"pdf_uploads": formatted_data}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
 class UserUploadAnswer(APIView):
