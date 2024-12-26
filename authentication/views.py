@@ -62,7 +62,9 @@ class LoginUserView(APIView):
 
                 return Response({
                     "message": "Admin login successful",
-                    "is_admin": user["is_admin"]
+                    "is_admin": user["is_admin"],
+                    'user':user
+
                     }, status=200)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
@@ -87,9 +89,9 @@ class Register_Org_Admin_User_View(APIView):
         password = data.get('password')
         section_assigned = data.get('section_assigned')
         department = data.get('department')
-
-        # Validate required fields
-        if not all([username, first_name, last_name, email, password, section_assigned, department]):
+        organization = data.get('organization')
+        
+        if not all([username, first_name, last_name, email, password, section_assigned, department, organization]):
             return Response({"message": "Please provide all the details"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Validate email format
@@ -102,7 +104,6 @@ class Register_Org_Admin_User_View(APIView):
                 return Response({"error": f"User with username {username} already exists"}, status=400)
 
             hashed_password = make_password(password)
-            organization ="Dav Public School"
             admin_user = {
                 "username": username,
                 "password": hashed_password,
@@ -116,8 +117,7 @@ class Register_Org_Admin_User_View(APIView):
                 "department": department,
                 "section_assigned": section_assigned,
             }
-            users_collection.insert_one(admin_user)
-
+           
             try:
                 subject = "Welcome to the QA Portal"
                 recipient_list = [email]
@@ -129,6 +129,8 @@ class Register_Org_Admin_User_View(APIView):
             except Exception as e:
                 print(f"Error sending email: {e}")
                 return Response({'message':"Email Server Error "},status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            users_collection.insert_one(admin_user)
+
             return Response({"message": "Successfully Created User"}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'message': "Error Occurred while fetching userdb"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -167,7 +169,7 @@ class Register_Org_Sub_Admin_User_View(APIView):
             "department":department,
             "section_assigned":section_assigned,
           }
-            user_data=users_collection.insert_one(admin_user)
+           
             try:
                 subject = "Welcome to the QA Portal"
                 recipient_list = [email]
@@ -181,7 +183,7 @@ class Register_Org_Sub_Admin_User_View(APIView):
             except Exception as e:
                 print(f"Error sending email: {e}")
                 return Response({'message':"Email Server Error in SubAdmin registeration "},status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        
+            user_data=users_collection.insert_one(admin_user)
             return Response({"message":"Successfully Created User "},status=status.HTTP_201_CREATED)
 
         except Exception as e : 
