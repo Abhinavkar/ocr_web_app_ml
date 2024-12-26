@@ -1,5 +1,6 @@
 from django.urls import path
-from . import views
+from . import views 
+from .views import AdminPdfDeleteUpload, AdminQuestionUpload
 
 
 urlpatterns = [
@@ -11,7 +12,8 @@ urlpatterns = [
     path('classes/', views.ClassListCreateAPI.as_view(), name='class_api'),
     path('subjects/', views.SubjectListCreateAPI.as_view(), name='subject_api'),
     path('subjects/<str:id>/', views.SubjectListCreateAPI.as_view(), name='subject_api'),
-    path('user/upload/answer/pdf/',views.AnswerUploadAPI.as_view(),name="answer_upload")
+    path('user/upload/answer/pdf/',views.AnswerUploadAPI.as_view(),name="answer_upload"),
+    path('admin/upload/question-pdf/', AdminQuestionUpload.as_view(), name='admin_upload_question_pdf'),
 
-
+    path('api/qa/admin/upload/pdf/delete/<str:pdf_name>/', AdminPdfDeleteUpload.as_view(), name='admin-pdf-delete'),
     ]

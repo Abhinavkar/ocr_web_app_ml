@@ -106,8 +106,8 @@ a:hover {
   text-decoration: underline;
 }
 
-.buttonclass {
-}
+/* .buttonclass {
+} */
 
 .buttonclass:hover {
   opacity: 0.9;
