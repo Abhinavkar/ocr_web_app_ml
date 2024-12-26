@@ -8,6 +8,8 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
+from django.views.generic import TemplateView
+
 schema_view = get_schema_view(
     openapi.Info(
         title="HRMS BACKEND ",
@@ -27,7 +29,5 @@ urlpatterns = [
     path('api/qa/', include('qa.urls')),
     path('api/auth/', include('authentication.urls')),
     path('api/services/',include('services.urls')),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-
-
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui')
 ]
