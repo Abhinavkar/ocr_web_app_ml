@@ -186,3 +186,10 @@ MONGO_DB_NAME = "ocr_db"
 client = MongoClient(MONGO_URI)
 db = client[MONGO_DB_NAME]
 
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'backendhrms@gmail.com'  # Your Gmail address
+EMAIL_HOST_PASSWORD = 'fyyv ybzd lsac kchd'   # The app password you generated

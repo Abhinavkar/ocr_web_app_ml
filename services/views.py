@@ -46,6 +46,11 @@ class ClassListCreateAPI(APIView):
             return Response({"error": "Class already exists"}, status=400)
         classes_collection.insert_one(data)
         return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
+    def delete(self,request):
+        return 
+    def put(self,request):
+        return
+    
 
 
 class SubjectListCreateAPI(APIView):
@@ -67,3 +72,16 @@ class SubjectListCreateAPI(APIView):
             return Response({"error": "Subject already exists for this class"}, status=400)
         subjects_collection.insert_one(data)
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, id):
+        
+        subjects_collection = get_collection("subjects")
+        subjects_collection.delete_one({"_id": ObjectId(id)})
+        return Response({"message": "Subject deleted successfully"}, status=status.HTTP_200_OK)
+    
+    def put(self, request, id):
+        data = request.data
+        subjects_collection = get_collection("subjects")
+        subjects_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+        return Response({"message": "Subject updated successfully"}, status=status.HTTP_200_OK)
+    

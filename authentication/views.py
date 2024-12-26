@@ -106,7 +106,20 @@ class Register_Org_Admin_User_View(APIView):
             "section_assigned":section_assigned,
           }
             users_collection.insert_one(admin_user)
+            try :
+                 subject = "Welcome to the HRMS Portal"
+                 username = serializer.validated_data.get('username', 'Your username')
+                 recipient_list = [serializer.validated_data['email']]
+                 message = (f"You have been registered as an HR user. You now have access to the portal.\n"
+                        f"Your User ID is: {username}\n"
+                        "Please log in with your credentials.")
+
+                 send_hr_email(subject, message, recipient_list)
+            except Exception as e:
+                print(f"Error sending email: {e}")
+            
             return Response({"message":"Successfully Created User "},status=status.HTTP_201_CREATED)
+        
 
         except Exception as e : 
             return Response({'message':"Error Occured while fetching userdb "},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
