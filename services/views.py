@@ -12,7 +12,10 @@ class Organization_View(APIView):
         return Response(organization,status=200)
     
     def post(self,request):
+        data = request.data
         organization_name = request.data.get('organization_name')
+        if not all([organization_name]):
+            return Response({"message": "Please provide all the details"}, status=status.HTTP_400_BAD_REQUEST)
         organization_collection = get_collection('organization_db')
         organization_collection.insert_one({'organization_name':organization_name})
 

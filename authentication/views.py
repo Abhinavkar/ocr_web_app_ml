@@ -33,21 +33,60 @@ class RegisterAdminUserView(APIView):
         return Response({"message": "Admin registered successfully"}, status=201)
 
 
-class RegisterNormalUserView(APIView):
-    def post(self, request):
-        data = request.data
-        if User.objects.filter(username=data["username"]).exists():
-            return Response({"error": "User already exists"}, status=400)
-        hashed_password = make_password(data["password"])
-        user = User.objects.create(
-            username=data["username"],
-            password=hashed_password,
-            is_admin=False,
-            is_superuser=False,
-            is_staff=False
-        )
-        user.save()
-        return Response({"message": "User registered successfully"}, status=201)
+class Register_Org_User_View(APIView):
+       def post(self,request):
+        data=request.data
+        organization = request.data.get('organaization')
+        username=request.data.get('username')
+        first_name=request.data.get('first_name')
+        last_name=request.data.get('last_name')
+        email = request.data.get('email')
+        is_admin=False
+        is_sub_admin=False
+        is_user=True
+        is_superstaff=False
+        section_assigned=request.data.get('section_assigned')
+        department=request.data.get('department')
+        if username is None or first_name is None or last_name is None or department is None or section_assigned is None:
+            return Response({"message":"Please provide all the details"},status=status.HTTP_400_BAD_REQUEST)
+        try : 
+            users_collection = get_collection("auth_users")  
+            if users_collection.find_one({"username": data["username"]}):
+                return Response({"error": f"user with this {username} already exists"}, status=400)
+            hashed_password = make_password(data["password"])
+            admin_user = {
+            "username": username,
+            "password": hashed_password,
+            "first_name":first_name,
+            'last_name':last_name,
+            "is_admin": is_admin,
+            "is_super_staff": is_superstaff,
+            "is_sub_admin": is_sub_admin,
+            'is_user':is_user,
+            "department":department,
+            "section_assigned":section_assigned,
+          }
+           
+            try:
+                subject = "Welcome to the QA Portal"
+                recipient_list = [email]
+                message = (f" Welcome to the QA Portal You have been registered as an User by an adminuser or Subadmin of your organization {organization}. You now have access to the Qa portal.\n"
+                           f"Your User ID is: {username}\n"
+                           f"1. Please log in with your credentials, and change your password.\n the default password is 123123\n"
+                           f"2. You are a Sub Admin Now for your whole organization\n"
+                           )
+                
+                send_hr_email(subject, message, recipient_list)
+            except Exception as e:
+                print(f"Error sending email: {e}")
+                return Response({'message':"Email Server Error in SubAdmin registeration "},status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            user_data=users_collection.insert_one(admin_user)
+            return Response({"message":"Successfully Created User "},status=status.HTTP_201_CREATED)
+
+        except Exception as e : 
+            return Response({'message':"Error Occured while fetching userdb "},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
 
 
 class LoginUserView(APIView):
@@ -146,7 +185,7 @@ class Register_Org_Sub_Admin_User_View(APIView):
         email = request.data.get('email')
         is_admin=False
         is_sub_admin=True
-        is_user=False
+        is_user=True
         is_superstaff=False
         section_assigned=request.data.get('section_assigned')
         department=request.data.get('department')
