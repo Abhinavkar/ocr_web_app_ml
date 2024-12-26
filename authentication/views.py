@@ -102,6 +102,7 @@ class Register_Org_Admin_User_View(APIView):
                 return Response({"error": f"User with username {username} already exists"}, status=400)
 
             hashed_password = make_password(password)
+            organization ="Dav Public School"
             admin_user = {
                 "username": username,
                 "password": hashed_password,
@@ -118,11 +119,12 @@ class Register_Org_Admin_User_View(APIView):
             users_collection.insert_one(admin_user)
 
             try:
-                subject = "Welcome to the HRMS Portal"
+                subject = "Welcome to the QA Portal"
                 recipient_list = [email]
-                message = (f"You have been registered as an HR user. You now have access to the portal.\n"
+                message = (f"You have been registered as an admin user for organization {organization}. You now have access to the Qa portal.\n"
                            f"Your User ID is: {username}\n"
-                           "Please log in with your credentials.")
+                           "1. You are a Admin Now for your whole organization\n"
+                           "2. Please log in with your credentials, and change your password.\n the default password is 123123\n")
                 send_hr_email(subject, message, recipient_list)
             except Exception as e:
                 print(f"Error sending email: {e}")
