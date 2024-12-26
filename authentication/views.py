@@ -128,17 +128,20 @@ class Register_Org_Admin_User_View(APIView):
                 send_hr_email(subject, message, recipient_list)
             except Exception as e:
                 print(f"Error sending email: {e}")
-
+                return Response({'message':"Email Server Error "},status=status.HTTP_503_SERVICE_UNAVAILABLE)
             return Response({"message": "Successfully Created User"}, status=status.HTTP_201_CREATED)
-
         except Exception as e:
             return Response({'message': "Error Occurred while fetching userdb"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
 class Register_Org_Sub_Admin_User_View(APIView):
      def post(self,request):
         data=request.data
+        organization = request.data.get('organaization')
         username=request.data.get('username')
         first_name=request.data.get('first_name')
         last_name=request.data.get('last_name')
+        email = request.data.get('email')
         is_admin=False
         is_sub_admin=True
         is_user=False
@@ -165,7 +168,20 @@ class Register_Org_Sub_Admin_User_View(APIView):
             "section_assigned":section_assigned,
           }
             user_data=users_collection.insert_one(admin_user)
-
+            try:
+                subject = "Welcome to the QA Portal"
+                recipient_list = [email]
+                message = (f" Welcome to the QA Portal You have been registered as an subadmin by an adminuser of your organization {organization}. You now have access to the Qa portal.\n"
+                           f"Your User ID is: {username}\n"
+                           f"1. Please log in with your credentials, and change your password.\n the default password is 123123\n"
+                           f"2. You are a Sub Admin Now for your whole organization\n"
+                           )
+                
+                send_hr_email(subject, message, recipient_list)
+            except Exception as e:
+                print(f"Error sending email: {e}")
+                return Response({'message':"Email Server Error in SubAdmin registeration "},status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
             return Response({"message":"Successfully Created User "},status=status.HTTP_201_CREATED)
 
         except Exception as e : 
