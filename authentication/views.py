@@ -90,6 +90,8 @@ class Register_Org_Admin_User_View(APIView):
         is_superstaff=False
         section_assigned=request.data.get('section_assigned')
         department=request.data.get('department')
+        if username is None and first_name is None and last_name is None and department is None and section_assigned is None and email is None:
+            return Response({"message":"Please provide all the details"},status=status.HTTP_400_BAD_REQUEST)
         try : 
             users_collection = get_collection("auth_users")  
             if users_collection.find_one({"username": data["username"]}):
@@ -139,6 +141,8 @@ class Register_Org_Sub_Admin_User_View(APIView):
         is_superstaff=False
         section_assigned=request.data.get('section_assigned')
         department=request.data.get('department')
+        if username is None or first_name is None or last_name is None or department is None or section_assigned is None:
+            return Response({"message":"Please provide all the details"},status=status.HTTP_400_BAD_REQUEST)
         try : 
             users_collection = get_collection("auth_users")  
             if users_collection.find_one({"username": data["username"]}):
