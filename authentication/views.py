@@ -6,6 +6,7 @@ from rest_framework.decorators import permission_classes
 from django.contrib.auth.hashers import check_password, make_password
 from .db_wrapper import get_collection
 from .models import User
+from .utils import send_hr_email
 
 class RegisterAdminUserView(APIView):
     def post(self, request):
@@ -82,6 +83,7 @@ class Register_Org_Admin_User_View(APIView):
         username=request.data.get('username')
         first_name=request.data.get('first_name')
         last_name=request.data.get('last_name')
+        email = request.data.get('email')
         is_admin=True
         is_sub_admin=True
         is_user=True
@@ -99,6 +101,7 @@ class Register_Org_Admin_User_View(APIView):
             "first_name":first_name,
             'last_name':last_name,
             "is_admin": is_admin,
+            "email":email,
             "is_super_staff": is_superstaff,
             "is_sub_admin": is_sub_admin,
             'is_user':is_user,
@@ -108,8 +111,7 @@ class Register_Org_Admin_User_View(APIView):
             users_collection.insert_one(admin_user)
             try :
                  subject = "Welcome to the HRMS Portal"
-                 username = serializer.validated_data.get('username', 'Your username')
-                 recipient_list = [serializer.validated_data['email']]
+                 recipient_list =email
                  message = (f"You have been registered as an HR user. You now have access to the portal.\n"
                         f"Your User ID is: {username}\n"
                         "Please log in with your credentials.")
