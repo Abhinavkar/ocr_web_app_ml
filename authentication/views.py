@@ -18,8 +18,6 @@ class RegisterAdminUserView(APIView):
 
         # Hash the password
         hashed_password = make_password(data["password"])
-
-        # Create the admin user document
         admin_user = {
             "username": data["username"],
             "password": hashed_password,
@@ -74,3 +72,79 @@ class LogoutUserView(APIView):
     def post(self, request):
         logout(request)
         return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+
+
+
+
+class Register_Org_Admin_User_View(APIView):
+    def post(self,request):
+        data=request.data
+        username=request.data.get('username')
+        first_name=request.data.get('first_name')
+        last_name=request.data.get('last_name')
+        is_admin=True
+        is_sub_admin=True
+        is_user=True
+        is_superstaff=False
+        section_assigned=request.data.get('section_assigned')
+        department=request.data.get('department')
+        try : 
+            users_collection = get_collection("auth_users")  
+            if users_collection.find_one({"username": data["username"]}):
+                return Response({"error": f"user with this {username} already exists"}, status=400)
+            hashed_password = make_password(data["password"])
+            admin_user = {
+            "username": username,
+            "password": hashed_password,
+            "first_name":first_name,
+            'last_name':last_name,
+            "is_admin": is_admin,
+            "is_super_staff": is_superstaff,
+            "is_sub_admin": is_sub_admin,
+            'is_user':is_user,
+            "department":department,
+            "section_assigned":section_assigned,
+          }
+            users_collection.insert_one(admin_user)
+            return Response({"message":"Successfully Created User "},status=status.HTTP_201_CREATED)
+
+        except Exception as e : 
+            return Response({'message':"Error Occured while fetching userdb "},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+class Register_Org_Sub_Admin_User_View(APIView):
+     def post(self,request):
+        data=request.data
+        username=request.data.get('username')
+        first_name=request.data.get('first_name')
+        last_name=request.data.get('last_name')
+        is_admin=False
+        is_sub_admin=True
+        is_user=False
+        is_superstaff=False
+        section_assigned=request.data.get('section_assigned')
+        department=request.data.get('department')
+        try : 
+            users_collection = get_collection("auth_users")  
+            if users_collection.find_one({"username": data["username"]}):
+                return Response({"error": f"user with this {username} already exists"}, status=400)
+            hashed_password = make_password(data["password"])
+            admin_user = {
+            "username": username,
+            "password": hashed_password,
+            "first_name":first_name,
+            'last_name':last_name,
+            "is_admin": is_admin,
+            "is_super_staff": is_superstaff,
+            "is_sub_admin": is_sub_admin,
+            'is_user':is_user,
+            "department":department,
+            "section_assigned":section_assigned,
+          }
+            user_data=users_collection.insert_one(admin_user)
+
+            return Response({"message":"Successfully Created User "},status=status.HTTP_201_CREATED)
+
+        except Exception as e : 
+            return Response({'message':"Error Occured while fetching userdb "},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
