@@ -8,7 +8,9 @@ from authentication.db_wrapper import get_collection
 class Organization_View(APIView):
     def get(self, request):
         organization_collection = get_collection('organization_db')
-        organization = organization_collection.find()
+        organization = list(organization_collection.find())
+        for org in organization:
+            org["_id"] = str(org["_id"])  # Convert ObjectId to string
         return Response(organization, status=200)
     
     def post(self, request):
@@ -46,22 +48,45 @@ class Organization_View(APIView):
 
 class ClassListCreateAPI(APIView):
 
-    def get(self, request):
+    # def get(self, request):
+    #     classes_collection = get_collection("classes")
+    #     classes = list(classes_collection.find({}))
+    #     for cls in classes:
+    #         cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
+    #     return Response(classes, status=status.HTTP_200_OK)
+    def get(self, request, organization_id=None):
         classes_collection = get_collection("classes")
-        classes = list(classes_collection.find({}))
+        if organization_id:
+            classes = list(classes_collection.find({"organization_id": organization_id}))
+        else:
+            classes = list(classes_collection.find({}))
+        
         for cls in classes:
             cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
         return Response(classes, status=status.HTTP_200_OK)
 
+
+    # def post(self, request):
+    #     data = request.data
+    #     if not data.get("name"):
+    #         return Response({"message": "Please provide the class name"}, status=status.HTTP_400_BAD_REQUEST)
+    #     classes_collection = get_collection("classes")
+    #     if classes_collection.find_one({"name": data["name"]}):
+    #         return Response({"error": "Class already exists"}, status=400)
+    #     classes_collection.insert_one(data)
+    #     return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
     def post(self, request):
         data = request.data
-        if not data.get("name"):
-            return Response({"message": "Please provide the class name"}, status=status.HTTP_400_BAD_REQUEST)
+        if not data.get("name") or not data.get("organization_id"):
+            return Response({"message": "Please provide the class name and organization ID"}, status=status.HTTP_400_BAD_REQUEST)
+        
         classes_collection = get_collection("classes")
-        if classes_collection.find_one({"name": data["name"]}):
-            return Response({"error": "Class already exists"}, status=400)
+        if classes_collection.find_one({"name": data["name"], "organization_id": data["organization_id"]}):
+            return Response({"error": "Class already exists for this organization"}, status=400)
+        
         classes_collection.insert_one(data)
         return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
+    
     
     def delete(self, request):
         return 
