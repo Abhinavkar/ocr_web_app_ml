@@ -87,8 +87,6 @@ class Register_Org_User_View(APIView):
             return Response({'message':"Error Occured while fetching userdb "},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-
-
 class LoginUserView(APIView):
     def post(self, request):
         data = request.data
@@ -107,16 +105,6 @@ class LoginUserView(APIView):
                     }, status=200)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
-
-
-
-class LogoutUserView(APIView):
-    def post(self, request):
-        logout(request)
-        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
-
-
-
 
 class Register_Org_Admin_User_View(APIView):
     def post(self, request):
