@@ -48,12 +48,6 @@ class Organization_View(APIView):
 
 class ClassListCreateAPI(APIView):
 
-    # def get(self, request):
-    #     classes_collection = get_collection("classes")
-    #     classes = list(classes_collection.find({}))
-    #     for cls in classes:
-    #         cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
-    #     return Response(classes, status=status.HTTP_200_OK)
     def get(self, request, organization_id=None):
         classes_collection = get_collection("classes")
         if organization_id:
@@ -65,16 +59,6 @@ class ClassListCreateAPI(APIView):
             cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
         return Response(classes, status=status.HTTP_200_OK)
 
-
-    # def post(self, request):
-    #     data = request.data
-    #     if not data.get("name"):
-    #         return Response({"message": "Please provide the class name"}, status=status.HTTP_400_BAD_REQUEST)
-    #     classes_collection = get_collection("classes")
-    #     if classes_collection.find_one({"name": data["name"]}):
-    #         return Response({"error": "Class already exists"}, status=400)
-    #     classes_collection.insert_one(data)
-    #     return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
     def post(self, request):
         data = request.data
         if not data.get("name") or not data.get("organization_id"):

@@ -41,12 +41,13 @@ class Register_Org_User_View(APIView):
         first_name=request.data.get('first_name')
         last_name=request.data.get('last_name')
         email = request.data.get('email')
+        section_assigned=request.data.get('section_assigned')
+        department=request.data.get('department')
         is_admin=False
         is_sub_admin=False
         is_user=True
         is_superstaff=False
-        section_assigned=request.data.get('section_assigned')
-        department=request.data.get('department')
+    
         if username is None or first_name is None or last_name is None or department is None or section_assigned is None:
             return Response({"message":"Please provide all the details"},status=status.HTTP_400_BAD_REQUEST)
         try : 
@@ -101,12 +102,11 @@ class LoginUserView(APIView):
                 "is_super_staff": user["is_super_staff"],
                 "is_sub_admin": user["is_sub_admin"],
                 "is_user": user["is_user"],
-                "first_name": user["first_name"],
+                "first_name": user["first_name"], 
                 "last_name": user["last_name"],
                 "email": user["email"],
                 "department": user["department"],
                 "section_assigned": user["section_assigned"],
-                'user': user
             }, status=200)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
