@@ -52,8 +52,8 @@ class ClassListCreateAPI(APIView):
         classes_collection = get_collection("classes")
         if id:
             classes = list(classes_collection.find({"organization_id": id}))
-        else:
-            classes = list(classes_collection.find({}))
+        else :
+            return Response({"message":"Internal Server Error "}, status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         for cls in classes:
             cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
@@ -81,7 +81,6 @@ class ClassListCreateAPI(APIView):
     def put(self, request):
         return
     
-
 
 class SubjectListCreateAPI(APIView):
     
