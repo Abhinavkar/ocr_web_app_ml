@@ -91,18 +91,23 @@ class LoginUserView(APIView):
     def post(self, request):
         data = request.data
         users_collection = get_collection("auth_users")
-        print(users_collection)
         user = users_collection.find_one({"username": data["username"]})
-        print(user)
 
         if user and check_password(data["password"], user["password"]):
-
-                return Response({
-                    "message": "Admin login successful",
-                    "is_admin": user["is_admin"],
-                    'user':user
-
-                    }, status=200)
+            user['_id'] = str(user['_id']) 
+            return Response({
+                "message": "Admin login successful",
+                "is_admin": user["is_admin"],
+                "is_super_staff": user["is_super_staff"],
+                "is_sub_admin": user["is_sub_admin"],
+                "is_user": user["is_user"],
+                "first_name": user["first_name"],
+                "last_name": user["last_name"],
+                "email": user["email"],
+                "department": user["department"],
+                "section_assigned": user["section_assigned"],
+                'user': user
+            }, status=200)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
 
@@ -215,4 +220,3 @@ class Register_Org_Sub_Admin_User_View(APIView):
 
         except Exception as e : 
             return Response({'message':"Error Occured while fetching userdb "},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
