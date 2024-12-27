@@ -48,10 +48,10 @@ class Organization_View(APIView):
 
 class ClassListCreateAPI(APIView):
 
-    def get(self, request, organization_id=None):
+    def get(self, request, id=None):
         classes_collection = get_collection("classes")
-        if organization_id:
-            classes = list(classes_collection.find({"organization_id": organization_id}))
+        if id:
+            classes = list(classes_collection.find({"organization_id": id}))
         else:
             classes = list(classes_collection.find({}))
         
