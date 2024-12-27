@@ -7,6 +7,8 @@ from django.contrib.auth.hashers import check_password, make_password
 from .db_wrapper import get_collection
 from .models import User
 from .utils import send_hr_email
+from bson import ObjectId
+
 
 class Register_Org_Admin_User_View(APIView):
     def post(self, request):
@@ -173,16 +175,23 @@ class Register_Org_User_View(APIView):
         except Exception as e : 
             return Response({'message':"Error Occured while fetching userdb "},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+
 class LoginUserView(APIView):
     def post(self, request):
         data = request.data
         users_collection = get_collection("auth_users")
+        organizations_collection = get_collection("organization_db")
         user = users_collection.find_one({"username": data["username"]})
 
-
         if user and check_password(data["password"], user["password"]):
-            user['_id'] = str(user['_id']) 
-    
+            user['_id'] = str(user['_id'])
+            
+            org_id = user['organization']
+            print(organizations_collection)
+            organization = organizations_collection.find_one({"_id": ObjectId(org_id)})
+            print(organization)
+            organization_name = organization["organization_name"] if organization else "Unknown"
+
             return Response({
                 "message": "Admin login successful",
                 "is_admin": user["is_admin"],
@@ -194,7 +203,7 @@ class LoginUserView(APIView):
                 "email": user["email"],
                 "department": user["department"],
                 "section_assigned": user["section_assigned"],
-                "organization":user['organization']
+                "organization": organization_name
             }, status=200)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
