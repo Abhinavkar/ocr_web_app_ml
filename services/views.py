@@ -61,16 +61,19 @@ class ClassListCreateAPI(APIView):
 
     def post(self, request):
         data = request.data
+        
         if not data.get("name") or not data.get("organization_id"):
-            return Response({"message": "Please provide the class name and organization ID"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Please provide both class name and organization ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+        data["organization_id"] = data.get("organization_id")
         
         classes_collection = get_collection("classes")
+        
         if classes_collection.find_one({"name": data["name"], "organization_id": data["organization_id"]}):
             return Response({"error": "Class already exists for this organization"}, status=400)
         
         classes_collection.insert_one(data)
         return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
-    
     
     def delete(self, request):
         return 
