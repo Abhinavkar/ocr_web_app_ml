@@ -203,7 +203,8 @@ class LoginUserView(APIView):
                 "email": user["email"],
                 "department": user["department"],
                 "section_assigned": user["section_assigned"],
-                "organization": organization_name
+                "organization": organization_name,
+                "organization_id":org_id
             }, status=200)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
