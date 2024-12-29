@@ -2,49 +2,67 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from authentication.db_wrapper import get_collection
-
+from authentication.permissions import IsAdmin, IsSubAdmin,IsSuperStaff,IsUser
 
 class Organization_View(APIView):
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), IsSuperStaff()]  
+        elif self.request.method == 'DELETE':
+            return [IsAuthenticated(), IsSuperStaff()]  
+        elif self.request.method == 'PUT':
+            return [IsAuthenticated(), IsSuperStaff()] 
+        return super().get_permissions()
+    
     def get(self, request):
         organization_collection = get_collection('organization_db')
         organization = list(organization_collection.find())
         for org in organization:
-            org["_id"] = str(org["_id"])  # Convert ObjectId to string
+            org["_id"] = str(org["_id"])  
         return Response(organization, status=200)
-    
+
     def post(self, request):
         data = request.data
         organization_name = data.get('organization_name')
         if not organization_name:
             return Response({"message": "Please provide the organization name"}, status=status.HTTP_400_BAD_REQUEST)
+
         organization_collection = get_collection('organization_db')
         if organization_collection.find_one({'organization_name': organization_name}):
             return Response({"message": "Organization already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
         organization_collection.insert_one({'organization_name': organization_name})
         return Response({"message": f"{organization_name} added successfully"}, status=201)
-    
+
     def delete(self, request, id):
         organization_name = request.data.get('organization_name')
         if not organization_name:
             return Response({"message": "Please provide the organization name"}, status=status.HTTP_400_BAD_REQUEST)
+
         organization_collection = get_collection('organization_db')
         result = organization_collection.delete_one({'organization_name': organization_name})
         if result.deleted_count == 0:
             return Response({"message": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+
         return Response({"message": f"{organization_name} deleted successfully"}, status=200)
-    
+
     def put(self, request, id):
         old_organization_name = request.data.get('old_organization_name')
         new_organization_name = request.data.get('new_organization_name')
+
         if not old_organization_name or not new_organization_name:
             return Response({"message": "Please provide both old and new organization names"}, status=status.HTTP_400_BAD_REQUEST)
+
         organization_collection = get_collection('organization_db')
         result = organization_collection.update_one({'organization_name': old_organization_name}, {'$set': {'organization_name': new_organization_name}})
         if result.matched_count == 0:
             return Response({"message": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+
         return Response({"message": f"{old_organization_name} updated to {new_organization_name}"}, status=200)
-    
+
 
 class ClassListCreateAPI(APIView):
 

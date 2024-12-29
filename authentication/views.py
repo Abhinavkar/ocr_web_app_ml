@@ -175,7 +175,6 @@ class Register_Org_User_View(APIView):
         except Exception as e : 
             return Response({'message':"Error Occured while fetching userdb "},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-
 class LoginUserView(APIView):
     def post(self, request):
         data = request.data

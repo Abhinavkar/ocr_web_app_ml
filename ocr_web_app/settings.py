@@ -68,7 +68,8 @@ INSTALLED_APPS = [
 
     'qa',
     'authentication',
-    'services'
+    'services',
+    'user',
 ]
 
 MIDDLEWARE = [
