@@ -240,6 +240,7 @@ class SubjectListCreateAPI(APIView):
 class AnswerUploadAPI(APIView):
     def post(self, request):
         try:
+            print(request.data)
             roll_no = request.data.get('rollNo')
             exam_id = request.data.get('examId')
             class_id = request.data.get('classId')
