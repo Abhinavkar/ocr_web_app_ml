@@ -57,48 +57,128 @@ class AdminPdfUpload(APIView):
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
 
+# class AdminQuestionUpload(APIView):
+#     def post(self, request):     
+#         class_selected = request.data.get('class_selected')
+#         subject_selected = request.data.get('subject_selected')
+#         exam_id = request.data.get('exam_id')
+#         question_pdf = request.FILES.get('question_pdf')
+        
+#         if not class_selected or not subject_selected:
+#             return Response({"message": "Class and Subject must be selected."}, status=400)
+        
+#         if not question_pdf:
+#             return Response({"message": "Question PDF must be uploaded."}, status=400)
+        
+#         if not question_pdf.name.endswith('.pdf'):
+#             return Response({"message": "Only PDF files are allowed."}, status=400)
+
+#         fs = FileSystemStorage()
+#         question_pdf_path = fs.save(question_pdf.name, question_pdf)
+#         question_pdf_full_path = fs.path(question_pdf_path)
+        
+#         try:
+#             print("Creating Embeddings for Question PDF")
+#             question_extracted_text = extract_text_from_pdf(question_pdf_full_path)
+#             question_sentence, question_sentence_embeddings = get_paragraph_embedding(question_extracted_text)
+
+#             questions_collection = get_collection("question_db")
+#             questions_collection.insert_one({
+#                 "class_selected": class_selected,
+#                 "subject_selected": subject_selected,
+#                 "exam_id": exam_id,
+#                 "question_pdf_path": question_pdf_full_path,
+#                 "question_extracted_text": question_extracted_text,
+#                 "question_sentence": question_sentence,
+#                 "question_sentence_embeddings": question_sentence_embeddings.tolist()
+#             })
+
+#             return Response({
+#                 "message": "Question PDF uploaded successfully.",
+#                 "question_pdf_url": question_pdf_full_path
+#             }, status=200)
+#         except Exception as e:
+#             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
+
 class AdminQuestionUpload(APIView):
-    def post(self, request):     
+    def post(self, request):
+        # Common inputs
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
         exam_id = request.data.get('exam_id')
-        question_pdf = request.FILES.get('question_pdf')
-        
+        upload_type = request.data.get('upload_type')  # 'pdf' or 'image'
+
+        # File inputs
+        course_pdf = request.FILES.get('course_pdf')
+        question_file = request.FILES.get('question_image') or request.FILES.get('question_pdf')
+
         if not class_selected or not subject_selected:
             return Response({"message": "Class and Subject must be selected."}, status=400)
         
-        if not question_pdf:
-            return Response({"message": "Question PDF must be uploaded."}, status=400)
+        if upload_type == 'pdf' and not course_pdf:
+            return Response({"message": "Course PDF must be uploaded."}, status=400)
         
-        if not question_pdf.name.endswith('.pdf'):
-            return Response({"message": "Only PDF files are allowed."}, status=400)
+        if upload_type == 'image' and not question_file:
+            return Response({"message": "Question file (PDF/Image) must be uploaded."}, status=400)
 
-        fs = FileSystemStorage()
-        question_pdf_path = fs.save(question_pdf.name, question_pdf)
-        question_pdf_full_path = fs.path(question_pdf_path)
-        
         try:
-            print("Creating Embeddings for Question PDF")
-            question_extracted_text = extract_text_from_pdf(question_pdf_full_path)
-            question_sentence, question_sentence_embeddings = get_paragraph_embedding(question_extracted_text)
+            if upload_type == 'pdf':
+                # Save and process Course PDF
+                fs = FileSystemStorage()
+                course_pdf_path = fs.save(course_pdf.name, course_pdf)
+                course_pdf_full_path = fs.path(course_pdf_path)
 
-            questions_collection = get_collection("question_db")
-            questions_collection.insert_one({
-                "class_selected": class_selected,
-                "subject_selected": subject_selected,
-                "exam_id": exam_id,
-                "question_pdf_path": question_pdf_full_path,
-                "question_extracted_text": question_extracted_text,
-                "question_sentence": question_sentence,
-                "question_sentence_embeddings": question_sentence_embeddings.tolist()
-            })
+                # Process the Course PDF as needed
+                print("Processing Course PDF...")
+                # Save Course PDF metadata (example only)
+                questions_collection = get_collection("course_pdf_db")
+                questions_collection.insert_one({
+                    "class_selected": class_selected,
+                    "subject_selected": subject_selected,
+                    "exam_id": exam_id,
+                    "course_pdf_path": course_pdf_full_path,
+                })
+                return Response({"message": "Course PDF uploaded successfully."}, status=200)
 
-            return Response({
-                "message": "Question PDF uploaded successfully.",
-                "question_pdf_url": question_pdf_full_path
-            }, status=200)
+            elif upload_type == 'image':
+                # Save and process Question File (PDF/Image)
+                fs = FileSystemStorage()
+                question_file_path = fs.save(question_file.name, question_file)
+                question_file_full_path = fs.path(question_file_path)
+
+                # Process question file (e.g., extract text for PDFs)
+                if question_file.name.endswith('.pdf'):
+                    print("Processing Question PDF...")
+                    question_extracted_text = extract_text_from_pdf(question_file_full_path)
+                    question_sentence, question_sentence_embeddings = get_paragraph_embedding(question_extracted_text)
+
+                    questions_collection = get_collection("question_db")
+                    questions_collection.insert_one({
+                        "class_selected": class_selected,
+                        "subject_selected": subject_selected,
+                        "exam_id": exam_id,
+                        "question_file_path": question_file_full_path,
+                        "question_extracted_text": question_extracted_text,
+                        "question_sentence": question_sentence,
+                        "question_sentence_embeddings": question_sentence_embeddings.tolist()
+                    })
+                else:
+                    # For images, only save metadata
+                    print("Processing Question Image...")
+                    questions_collection = get_collection("question_db")
+                    questions_collection.insert_one({
+                        "class_selected": class_selected,
+                        "subject_selected": subject_selected,
+                        "exam_id": exam_id,
+                        "question_file_path": question_file_full_path,
+                    })
+
+                return Response({"message": "Question file uploaded successfully."}, status=200)
+
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
 
 class AdminPdfGetUpload(APIView):
     def get(self, request):

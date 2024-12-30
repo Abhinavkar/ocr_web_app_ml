@@ -100,25 +100,86 @@ class ClassListCreateAPI(APIView):
         return
     
 
-class SubjectListCreateAPI(APIView):
     
-    def get(self, request, id=None):
+class SectionListCreateAPI(APIView):
+    
+    def get(self, request, class_id=None):
+        if not class_id:
+            return Response({"message": "Class ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        sections_collection = get_collection("sections")  # Assuming 'sections' is the collection name in MongoDB
+        sections = list(sections_collection.find({"class_id": class_id}))
+
+        if sections:
+            for section in sections:
+                section["_id"] = str(section["_id"])  # Convert ObjectId to string
+            return Response(sections, status=status.HTTP_200_OK)
+        
+        return Response({"message": "No sections found for this class."}, status=status.HTTP_404_NOT_FOUND)
+    def post(self, request):
+        data = request.data
+        if not data.get("name") or not data.get("class_id"):
+            return Response({"message": "Please provide both section name and class ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+        sections_collection = get_collection("sections")
+        if sections_collection.find_one({"name": data["name"], "class_id": data["class_id"]}):
+            return Response({"error": "Section already exists for this class"}, status=status.HTTP_400_BAD_REQUEST)
+
+        sections_collection.insert_one(data)
+        return Response({"message": "Section created successfully"}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, id):
+        sections_collection = get_collection("sections")
+        result = sections_collection.delete_one({"_id": ObjectId(id)})
+        if result.deleted_count == 0:
+            return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Section deleted successfully"}, status=status.HTTP_200_OK)
+
+    def put(self, request, id):
+        data = request.data
+        if not data:
+            return Response({"message": "Please provide the data to update"}, status=status.HTTP_400_BAD_REQUEST)
+        sections_collection = get_collection("sections")
+        result = sections_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+        if result.matched_count == 0:
+            return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Section updated successfully"}, status=status.HTTP_200_OK)
+    
+    
+
+class SubjectListCreateAPI(APIView):
+    def get(self, request, class_id=None, section_id=None):
         subjects_collection = get_collection("subjects")
-        if id:
-            subjects = list(subjects_collection.find({"associated_class_id": id}))
-        else:
-            subjects = list(subjects_collection.find({}))
+
+        # Build query dynamically based on provided IDs
+        query = {}
+        if class_id:
+            query["associated_class_id"] = class_id
+        if section_id:
+            query["associated_section_id"] = section_id
+
+        subjects = list(subjects_collection.find(query))
         for subject in subjects:
-            subject["_id"] = str(subject["_id"]) 
+            subject["_id"] = str(subject["_id"])  # Convert ObjectId to string
+
         return Response(subjects, status=status.HTTP_200_OK)
 
     def post(self, request):
         data = request.data
-        if not data.get("name") or not data.get("associated_class_id"):
-            return Response({"message": "Please provide both subject name and associated class ID"}, status=status.HTTP_400_BAD_REQUEST)
+        if not data.get("name") or not data.get("associated_class_id") or not data.get("associated_section_id"):
+            return Response(
+                {"message": "Please provide subject name, associated class ID, and associated section ID."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         subjects_collection = get_collection("subjects")
-        if subjects_collection.find_one({"name": data["name"], "associated_class_id": data["associated_class_id"]}):
-            return Response({"error": "Subject already exists for this class"}, status=400)
+        if subjects_collection.find_one({
+            "name": data["name"],
+            "associated_class_id": data["associated_class_id"],
+            "associated_section_id": data["associated_section_id"],
+        }):
+            return Response({"error": "Subject already exists for this class and section"}, status=400)
+
         subjects_collection.insert_one(data)
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
 
@@ -128,7 +189,7 @@ class SubjectListCreateAPI(APIView):
         if result.deleted_count == 0:
             return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Subject deleted successfully"}, status=status.HTTP_200_OK)
-    
+
     def put(self, request, id):
         data = request.data
         if not data:
@@ -138,4 +199,3 @@ class SubjectListCreateAPI(APIView):
         if result.matched_count == 0:
             return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Subject updated successfully"}, status=status.HTTP_200_OK)
-    

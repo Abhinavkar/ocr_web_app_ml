@@ -11,7 +11,13 @@ urlpatterns = [
     path('classes/', ClassListCreateAPI.as_view(), name='class_api'),
     path('classes/<str:id>/', ClassListCreateAPI.as_view(), name='class_api'),
     path('subjects/', SubjectListCreateAPI.as_view(), name='subject_api'),
-    path('subjects/<str:id>/',SubjectListCreateAPI.as_view(), name='subject_api'),
+    # path('subjects/<str:id>/',SubjectListCreateAPI.as_view(), name='subject_api'),
+    path('subjects/<str:id>/', SubjectListCreateAPI.as_view(), name='subject-detail'),
+    path('subjects/<str:class_id>/<str:section_id>/', SubjectListCreateAPI.as_view(), name='subject-list-class-section'),
+
+
+    path('sections/', SectionListCreateAPI.as_view(), name='section-list'),
+    path('sections/<str:class_id>/', SectionListCreateAPI.as_view(), name='section-class'),
 
 
 
