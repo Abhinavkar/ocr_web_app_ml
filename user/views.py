@@ -1,13 +1,23 @@
 from authentication.db_wrapper import get_collection
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from authentication.permissions import IsAdmin, IsSubAdmin
+from authentication.permissions import IsAdmin, IsSubAdmin, IsSuperStaff
 from rest_framework.views import APIView
 from rest_framework import status
 from bson import ObjectId
 
 class User_Management_Operations(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin | IsSubAdmin]
+    
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), IsSuperStaff()]  
+        elif self.request.method == 'DELETE':
+            return [IsAuthenticated(), IsSuperStaff()]  
+        elif self.request.method == 'PUT':
+            return [IsAuthenticated(), IsSuperStaff()] 
+        return super().get_permissions()
+    
     user_collection = get_collection('auth_users')
     org_collection = get_collection('organization_db')
 
