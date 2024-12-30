@@ -20,7 +20,6 @@ class AdminPdfUpload(APIView):
     def post(self, request):     
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
-        exam_id = request.data.get('exam_id')
         pdf_file = request.FILES.get('course_pdf') 
         
         if not class_selected or not subject_selected:
@@ -45,7 +44,6 @@ class AdminPdfUpload(APIView):
             pdfs_collection.insert_one({
                 "class_selected": class_selected,
                 "subject_selected": subject_selected,
-                "exam_id": exam_id,
                 "pdf_file_path": pdf_file_full_path,
                 "pdf_extracted_text": pdf_extracted_text,
                 "pdf_sentence": pdf_sentence,

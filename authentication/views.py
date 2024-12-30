@@ -186,9 +186,7 @@ class LoginUserView(APIView):
             user['_id'] = str(user['_id'])
             
             org_id = user['organization']
-            print(organizations_collection)
             organization = organizations_collection.find_one({"_id": ObjectId(org_id)})
-            print(organization)
             organization_name = organization["organization_name"] if organization else "Unknown"
 
             return Response({
