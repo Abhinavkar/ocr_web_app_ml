@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework import generics, status
 from .utils import *
 from authentication.db_wrapper import get_collection
-
+from bson import ObjectId
 from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
 from sentence_transformers import util
 import ast 
@@ -419,5 +419,24 @@ class AnswerUploadAPI(APIView):
             return Response({"message": "Bad Request"}, status=status.HTTP_501_NOT_IMPLEMENTED)
 
         return Response({"message": "Answer uploaded successfully"}, status=status.HTTP_201_CREATED)
-
-
+    
+class ResultRetrieveAPI(APIView):
+    def get(self, request, object_id=None):
+        results_collection = get_collection("qa_results")
+        
+        if object_id:
+            try:
+                object_id = ObjectId(object_id)
+                print(f"Querying for ObjectId: {object_id}")
+                results = list(results_collection.find({"_id": object_id}))
+                print(f"Query results: {results}")
+            except Exception as e:
+                return Response({"message": f"Invalid ObjectId: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            results = list(results_collection.find({}))
+            print(f"Query results: {results}")
+        
+        for result in results:
+            result["_id"] = str(result["_id"])  # Convert ObjectId to string
+        
+        return Response(results, status=status.HTTP_200_OK)
