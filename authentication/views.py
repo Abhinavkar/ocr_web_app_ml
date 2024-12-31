@@ -128,6 +128,7 @@ class Register_Org_User_View(APIView):
         first_name=request.data.get('first_name')
         last_name=request.data.get('last_name')
         email = request.data.get('email')
+
         section_assigned=request.data.get('section_assigned')
         department=request.data.get('department')
         is_admin=False
@@ -147,6 +148,7 @@ class Register_Org_User_View(APIView):
             "password": hashed_password,
             "first_name":first_name,
             'last_name':last_name,
+            'email':email,
             "is_admin": is_admin,
             "is_super_staff": is_superstaff,
             "is_sub_admin": is_sub_admin,
@@ -181,27 +183,33 @@ class LoginUserView(APIView):
         users_collection = get_collection("auth_users")
         organizations_collection = get_collection("organization_db")
         user = users_collection.find_one({"username": data["username"]})
+        print(user)
 
         if user and check_password(data["password"], user["password"]):
-            user['_id'] = str(user['_id'])
-            
-            org_id = user['organization']
-            organization = organizations_collection.find_one({"_id": ObjectId(org_id)})
-            organization_name = organization["organization_name"] if organization else "Unknown"
+            if user['is_admin'] is True or user['is_sub_admin'] is True:
+                user['_id'] = str(user['_id'])
+                
+                org_id = user['organization']
+                print(org_id)
+                organization = organizations_collection.find_one({"_id": ObjectId(org_id)})
+                print(organization)
+                organization_name = organization["organization_name"] if organization else "Unknown"
 
-            return Response({
-                "message": "Admin login successful",
-                "is_admin": user["is_admin"],
-                "is_super_staff": user["is_super_staff"],
-                "is_sub_admin": user["is_sub_admin"],
-                "is_user": user["is_user"],
-                "first_name": user["first_name"],
-                "last_name": user["last_name"],
-                "email": user["email"],
-                "department": user["department"],
-                "section_assigned": user["section_assigned"],
-                "organization": organization_name,
-                "organization_id":org_id
-            }, status=200)
+                return Response({
+                    "message": "Admin login successful",
+                    "is_admin": user["is_admin"],
+                    "is_super_staff": user["is_super_staff"],
+                    "is_sub_admin": user["is_sub_admin"],
+                    "is_user": user["is_user"],
+                    "first_name": user["first_name"],
+                    "last_name": user["last_name"],
+                    "email": user["email"],
+                    "department": user["department"],
+                    "section_assigned": user["section_assigned"],
+                    "organization": organization_name,
+                    "organization_id":org_id
+                }, status=200)
+            else:
+                return Response({"message":"Access Denied "},status=status.HTTP_403_FORBIDDEN)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
