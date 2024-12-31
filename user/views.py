@@ -23,11 +23,6 @@ class User_Management_Operations(APIView):
     user_collection = get_collection('auth_users')
     org_collection = get_collection('organization_db')
 
-    # def get(self, request):
-    #     users = list(self.user_collection.find())
-    #     for user in users:
-    #         user['_id'] = str(user['_id']) 
-    #     return Response(users, status=status.HTTP_200_OK)
     
     def get(self, request):
         user_header = request.headers.get('user')  # Get the user header

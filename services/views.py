@@ -148,13 +148,11 @@ class SectionListCreateAPI(APIView):
     
 
 class SubjectListCreateAPI(APIView):
-    def get(self, request, class_id=None, section_id=None):
+    def get(self, request, section_id=None):
         subjects_collection = get_collection("subjects")
 
-        # Build query dynamically based on provided IDs
+        # Build query dynamically based on provided section ID
         query = {}
-        if class_id:
-            query["associated_class_id"] = class_id
         if section_id:
             query["associated_section_id"] = section_id
 
@@ -166,19 +164,18 @@ class SubjectListCreateAPI(APIView):
 
     def post(self, request):
         data = request.data
-        if not data.get("name") or not data.get("associated_class_id") or not data.get("associated_section_id"):
+        if not data.get("name") or not data.get("associated_section_id"):
             return Response(
-                {"message": "Please provide subject name, associated class ID, and associated section ID."},
+                {"message": "Please provide subject name and associated section ID."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         subjects_collection = get_collection("subjects")
         if subjects_collection.find_one({
             "name": data["name"],
-            "associated_class_id": data["associated_class_id"],
             "associated_section_id": data["associated_section_id"],
         }):
-            return Response({"error": "Subject already exists for this class and section"}, status=400)
+            return Response({"error": "Subject already exists for this section"}, status=400)
 
         subjects_collection.insert_one(data)
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
