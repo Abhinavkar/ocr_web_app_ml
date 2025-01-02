@@ -304,6 +304,7 @@ class AnswerUploadAPI(APIView):
             subject = request.data.get('subject')
             section = request.data.get('section')
             answer_pdf = request.FILES.get('answer_pdf')
+            # user_id = request.data.get('user_id')
 
            
             if not roll_no:
@@ -318,6 +319,8 @@ class AnswerUploadAPI(APIView):
                 return Response({"error": "Section is required"}, status=status.HTTP_400_BAD_REQUEST)
             if not answer_pdf:
                 return Response({"error": "Answer PDF is required"}, status=status.HTTP_400_BAD_REQUEST)
+            # if not user_id:
+            #     return Response({"error" : "User_id is required"},status=status.HTTP_400_BAD_REQUEST)
 
             
             question_exam_data = question_db_collection.find_one({"exam_id": exam_id})
@@ -431,7 +434,8 @@ class AnswerUploadAPI(APIView):
                     "section":section,
                     "user_answers": user_answers,
                     "user_answer_embeddings": answer_embeddings,
-                    "results": results
+                    "results": results,
+                    # "user_id":user_id
                 })
                 print("Results inserted into the database.")
             except Exception as e:
