@@ -38,6 +38,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'Authorization',
     'Content-Type',
+    'user',
 
 ]
 CORS_ALLOW_METHODS = [
