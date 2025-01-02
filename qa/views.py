@@ -75,7 +75,7 @@ class AdminQuestionUpload(APIView):
         class_selected = request.data.get('class_selected')  # Class selected
         subject_selected = request.data.get('subject_selected')  # Subject selected
         section_selected = request.data.get('section_selected')  # Section selected
-        pdf_file = request.FILES.get('question_pdf')  # The question PDF file
+        pdf_file = request.FILES.get('question_image')  # The question PDF file
         
         # Debugging statements
         print(f"Received data: exam_id={exam_id}, class_selected={class_selected}, "
@@ -111,9 +111,9 @@ class AdminQuestionUpload(APIView):
             # Insert the extracted data along with exam_id and other fields into the collection
             question_db_collection.insert_one({
                 "exam_id": exam_id,
-                "class_selected": class_selected,
-                "subject_selected": subject_selected,
-                "section_selected": section_selected,
+                "class_id": class_selected,
+                "subject": subject_selected,
+                "section": section_selected,
                 "pdf_file_path": pdf_file_full_path,
                 "pdf_extracted_text": pdf_extracted_text,
                 # You can add embeddings or other data here if required

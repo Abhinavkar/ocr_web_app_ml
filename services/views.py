@@ -196,3 +196,4 @@ class SubjectListCreateAPI(APIView):
         if result.matched_count == 0:
             return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Subject updated successfully"}, status=status.HTTP_200_OK)
+
