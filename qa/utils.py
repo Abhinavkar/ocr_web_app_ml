@@ -291,7 +291,7 @@ def extract_answers_from_pdf(pdf_file_path):
     """
     Extract answers from a multi-page PDF.
     """
-    output_folder = os.path.join("answer_images", os.path.splitext(os.path.basename(pdf_file_path))[0])
+    output_folder = os.path.join("./media/answer_images", os.path.splitext(os.path.basename(pdf_file_path))[0])
     image_paths = convert_pdf_to_images(pdf_file_path, output_folder)
     
     user_answers = {}

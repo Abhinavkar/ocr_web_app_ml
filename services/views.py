@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from authentication.db_wrapper import get_collection
 from authentication.permissions import IsAdmin, IsSubAdmin,IsSuperStaff,IsUser
+from bson.objectid import ObjectId
 
 class Organization_View(APIView):
 
@@ -66,6 +67,7 @@ class Organization_View(APIView):
 
 
 class ClassListCreateAPI(APIView):
+    
 
     def get(self, request, id=None):
         classes_collection = get_collection("classes")
@@ -198,3 +200,18 @@ class SubjectListCreateAPI(APIView):
             return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Subject updated successfully"}, status=status.HTTP_200_OK)
 
+class ClassListAll(APIView):
+    def get(self, request, id=None):
+        classes_collection = get_collection("classes")
+        if id:
+            classes = classes_collection.find_one({"_id": ObjectId(id)})
+            if classes:
+                classes["_id"] = str(classes["_id"])  # Convert ObjectId to string
+                return Response(classes, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            classes = list(classes_collection.find())
+            for cls in classes:
+                cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
+            return Response(classes, status=status.HTTP_200_OK)

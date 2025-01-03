@@ -1,11 +1,11 @@
 from django.urls import path
 from . import views 
-from .views import AdminPdfDeleteUpload, AdminQuestionUpload, ResultRetrieveAPI
+from .views import AdminPdfDeleteUpload, AdminQuestionUpload, ResultRetrieveAPI, DocumentListAPI
 
 
 urlpatterns = [
     path('admin/upload/pdf/', views.AdminPdfUpload.as_view(), name='pdf_upload'),
-    path('admin/upload/pdf/list/',views.AdminPdfGetUpload.as_view(), name='pdf_list'),
+    path('documents/', DocumentListAPI.as_view(), name='list-documents'),
     # New Class and Subject APIs
     path('user/upload/answer/pdf/',views.AnswerUploadAPI.as_view(),name="answer_upload"),
     path('admin/upload/question-pdf/', AdminQuestionUpload.as_view(), name='admin_upload_question_pdf'),

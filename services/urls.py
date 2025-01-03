@@ -18,6 +18,6 @@ urlpatterns = [
     path('sections/<str:class_id>/', SectionListCreateAPI.as_view(), name='section-class'),
 
 
-
+    path('class/<str:id>/', ClassListAll.as_view(), name='class-list-all'),
 
     ]
