@@ -207,7 +207,8 @@ class LoginUserView(APIView):
                     "department": user["department"],
                     "section_assigned": user["section_assigned"],
                     "organization": organization_name,
-                    "organization_id":org_id
+                    "organization_id":org_id,
+                    "id":user['_id']
                 }, status=200)
             else:
                 return Response({"message":"Access Denied "},status=status.HTTP_403_FORBIDDEN)
