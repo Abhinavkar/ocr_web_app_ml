@@ -309,7 +309,7 @@ def extract_answers_from_pdf(pdf_file_path):
     return user_answers
 
 
-def get_stored_result(roll_no, exam_id, class_id, subject):
+def get_stored_result(roll_no, exam_id, class_id, subject,section):
     """
     Fetch stored result from the database with proper validation.
 
@@ -331,22 +331,34 @@ def get_stored_result(roll_no, exam_id, class_id, subject):
         raise ValueError("Class ID must be provided.")
     if not subject:
         raise ValueError("Subject must be provided.")
+    if not section:
+        raise ValueError("Section must be selected")
+    
+    question_db_collection = get_collection("question_db")
+
+    question_exam_data = question_db_collection.find_one({"exam_id": exam_id})
+    if not question_exam_data:
+                print("Exam ID not found in question DB")
+                return Response({"message": "Exam ID not found in question DB"}, status=status.HTTP_400_BAD_REQUEST)
+
 
     # Perform database query
     try:
         answers_db_collection = get_collection("answers_db")
-        result = answers_db_collection.find_one({
+        results = answers_db_collection.find_one({
             "roll_no": roll_no,
-            "exam_id": exam_id,
+            "exam_id": question_exam_data.get("exam_id"),
+            "exam_id":exam_id,
             "class_id": class_id,
-            "subject": subject
+            "subject": subject,
+            "section":section
         })
-        if result:
+        if results:
             # Ensure 'result' key exists in the document
-            if 'result' in result:
-                return result['result']
+            if 'results' in results:
+                return results['results']
             else:
-                print("Warning: 'result' key is missing in the retrieved document.")
+                print("Warning: 'results' key is missing in the retrieved document.")
                 return None
         else:
             # No result found in the database

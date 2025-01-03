@@ -131,9 +131,6 @@ class AdminQuestionUpload(APIView):
         # In case of an unexpected scenario
         return Response({"message": "Invalid upload type or missing file."}, status=400)
 
-
-
-
 class AdminPdfGetUpload(APIView):
     def get(self, request):
         try:
@@ -185,6 +182,51 @@ class AdminPdfDeleteUpload(APIView):
             # If no matching document is found
 
 
+class UserUploadAnswer(APIView):
+    # permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def post(self, request):
+        if request.method == 'POST' and request.FILES.get('answer_image'):
+            answer_image = request.FILES['answer_image']
+            answer_image_path = fs.save(answer_image.name, answer_image)
+            answer_image_full_path = fs.path(answer_image_path)
+
+        try:
+            extracted_text = extract_text_from_pdf(answer_image_full_path)
+            sentences, sentence_embeddings = get_paragraph_embedding(extracted_text)
+            answers_embeddings_collection = get_collection("answers")
+            answers_embeddings_collection.insert_one({
+                "answer_image_path": answer_image_full_path,
+                "extracted_text": extracted_text,
+                "embeddings": sentence_embeddings.tolist()
+            })
+
+            return Response({'message': 'Answer Uploaded and Analyzed Successfully'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"message": f"An error occurred while creating embeddings: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            return Response({"message": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@login_required
+def upload_files(request):
+    if request.method == 'POST' and request.FILES['pdf'] and request.FILES['question_image'] and request.FILES['answer_image']:
+        fs = FileSystemStorage()
+        pdf_file = request.FILES['pdf']
+        question_image = request.FILES['question_image']
+        answer_image = request.FILES['answer_image']
+        pdf_file_path = fs.save(pdf_file.name, pdf_file)
+        question_image_path = fs.save(question_image.name, question_image)
+        answer_image_path = fs.save(answer_image.name, answer_image)
+        pdf_file_full_path = fs.path(pdf_file_path)
+        question_image_full_path = fs.path(question_image_path)
+        answer_image_full_path = fs.path(answer_image_path)
+        result = process_uploaded_files(pdf_file_full_path, question_image_full_path, answer_image_full_path)
+        return render(request, 'qa/result.html', {'result': result})
+
+    return render(request, 'qa/upload.html')
+    
     
 class ClassListCreateAPI(APIView):
 
