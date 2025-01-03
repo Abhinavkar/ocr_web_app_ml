@@ -70,67 +70,81 @@ class AdminPdfUpload(APIView):
 
 class AdminQuestionUpload(APIView):
     def post(self, request):
-        # Extract input data from request
-        exam_id = request.data.get('exam_id')  # Exam ID
-        class_selected = request.data.get('class_selected')  # Class selected
-        subject_selected = request.data.get('subject_selected')  # Subject selected
-        section_selected = request.data.get('section_selected')  # Section selected
-        pdf_file = request.FILES.get('question_image')  # The question PDF file
-        
-        # Debugging statements
-        print(f"Received data: exam_id={exam_id}, class_selected={class_selected}, "
-              f"subject_selected={subject_selected}, section_selected={section_selected}")
-        
-        # Validate that all required fields are provided
-        if not exam_id:
-            return Response({"message": "Exam ID must be provided."}, status=400)
-        
-        if not class_selected or not subject_selected or not section_selected:
-            return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
-        
-        if not pdf_file: 
-            return Response({"message": "PDF file must be uploaded."}, status=400)
-        
-        if not pdf_file.name.endswith('.pdf'):
-            return Response({"message": "Only PDF files are allowed."}, status=400)
+        # Common inputs
+        class_selected = request.data.get('class_selected')
+        subject_selected = request.data.get('subject_selected')
+        exam_id = request.data.get('exam_id')
+        upload_type = request.data.get('upload_type')  # 'pdf' or 'image'
 
-        # Save the uploaded PDF
-        fs = FileSystemStorage()
-        pdf_file_path = fs.save(pdf_file.name, pdf_file)
-        pdf_file_full_path = fs.path(pdf_file_path)
+        # File inputs
+        course_pdf = request.FILES.get('course_pdf')
+        question_file = request.FILES.get('question_image') or request.FILES.get('question_pdf')
+
+        if not class_selected or not subject_selected:
+            return Response({"message": "Class and Subject must be selected."}, status=400)
         
+        if upload_type == 'pdf' and not course_pdf:
+            return Response({"message": "Course PDF must be uploaded."}, status=400)
+        
+        if upload_type == 'image' and not question_file:
+            return Response({"message": "Question file (PDF/Image) must be uploaded."}, status=400)
+
         try:
-            print("Processing question PDF")
-            # Extract text from the uploaded PDF
-            pdf_extracted_text = extract_text_from_pdf(pdf_file_full_path)
-            # If needed, you could also process this text further here, like generating embeddings
-            
-            # Get the database collection to store the question data
-            question_db_collection = get_collection("question_db")
-            
-            # Insert the extracted data along with exam_id and other fields into the collection
-            question_db_collection.insert_one({
-                "exam_id": exam_id,
-                "class_id": class_selected,
-                "subject": subject_selected,
-                "section": section_selected,
-                "pdf_file_path": pdf_file_full_path,
-                "pdf_extracted_text": pdf_extracted_text,
-                # You can add embeddings or other data here if required
-            })
+            if upload_type == 'pdf':
+                # Save and process Course PDF
+                fs = FileSystemStorage()
+                course_pdf_path = fs.save(course_pdf.name, course_pdf)
+                course_pdf_full_path = fs.path(course_pdf_path)
 
-            return Response({
-                "message": "Question PDF uploaded successfully.",
-                "pdf_file_url": pdf_file_full_path
-            }, status=200)
-        
+                # Process the Course PDF as needed
+                print("Processing Course PDF...")
+                # Save Course PDF metadata (example only)
+                questions_collection = get_collection("course_pdf_db")
+                questions_collection.insert_one({
+                    "class_selected": class_selected,
+                    "subject_selected": subject_selected,
+                    "exam_id": exam_id,
+                    "course_pdf_path": course_pdf_full_path,
+                })
+                return Response({"message": "Course PDF uploaded successfully."}, status=200)
+
+            elif upload_type == 'image':
+                # Save and process Question File (PDF/Image)
+                fs = FileSystemStorage()
+                question_file_path = fs.save(question_file.name, question_file)
+                question_file_full_path = fs.path(question_file_path)
+
+                # Process question file (e.g., extract text for PDFs)
+                if question_file.name.endswith('.pdf'):
+                    print("Processing Question PDF...")
+                    question_extracted_text = extract_text_from_pdf(question_file_full_path)
+                    question_sentence, question_sentence_embeddings = get_paragraph_embedding(question_extracted_text)
+
+                    questions_collection = get_collection("question_db")
+                    questions_collection.insert_one({
+                        "class_selected": class_selected,
+                        "subject_selected": subject_selected,
+                        "exam_id": exam_id,
+                        "question_file_path": question_file_full_path,
+                        "question_extracted_text": question_extracted_text,
+                        "question_sentence": question_sentence,
+                        "question_sentence_embeddings": question_sentence_embeddings.tolist()
+                    })
+                else:
+                    # For images, only save metadata
+                    print("Processing Question Image...")
+                    questions_collection = get_collection("question_db")
+                    questions_collection.insert_one({
+                        "class_selected": class_selected,
+                        "subject_selected": subject_selected,
+                        "exam_id": exam_id,
+                        "question_file_path": question_file_full_path,
+                    })
+
+                return Response({"message": "Question file uploaded successfully."}, status=200)
+
         except Exception as e:
-            # Handle any errors that occur during processing
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-
-        # In case of an unexpected scenario
-        return Response({"message": "Invalid upload type or missing file."}, status=400)
-
 
 class DocumentListAPI(APIView):
     def get(self, request):
@@ -308,6 +322,7 @@ class AnswerUploadAPI(APIView):
 
             
             question_exam_data = question_db_collection.find_one({"exam_id": exam_id})
+            print(question_exam_data)
             if not question_exam_data:
                 print("Exam ID not found in question DB")
                 return Response({"message": "Exam ID not found in question DB"}, status=status.HTTP_400_BAD_REQUEST)
@@ -360,7 +375,7 @@ class AnswerUploadAPI(APIView):
             try:
                 # print(f"Fetched question_exam_data: {question_exam_data}")
 
-                question_text = question_exam_data.get("extracted_text", [])
+                question_text = question_exam_data.get("pdf_extracted_text", [])
                 questions = question_exam_data.get("question_sentence", [])
                 question_embeddings = question_exam_data.get("question_sentence_embeddings", [])
 

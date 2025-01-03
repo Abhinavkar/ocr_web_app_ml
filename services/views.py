@@ -66,6 +66,7 @@ class Organization_View(APIView):
 
 
 class ClassListCreateAPI(APIView):
+    
 
     def get(self, request, id=None):
         classes_collection = get_collection("classes")
