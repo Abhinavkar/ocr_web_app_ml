@@ -133,34 +133,46 @@ class AdminQuestionUpload(APIView):
 
 
 
-
 class AdminPdfGetUpload(APIView):
     def get(self, request):
         try:
-            pdfs_collection = get_collection("pdf_questions")
+            pdfs_collection = get_collection("pdf_books")
+            questions_collection = get_collection("question_db")
             classes_collection = get_collection("classes")
+            sections_collection = get_collection("sections")
             subjects_collection = get_collection("subjects")
 
             classes = list(classes_collection.find({}, {"_id": 1, "name": 1}))
+            sections = list(sections_collection.find({}, {"_id": 1, "name": 1}))
             subjects = list(subjects_collection.find({}, {"_id": 1, "name": 1}))
 
             class_map = {str(cls["_id"]): cls["name"] for cls in classes}
+            section_map = {str(sec["_id"]): sec["name"] for sec in sections}
             subject_map = {str(sub["_id"]): sub["name"] for sub in subjects}
 
             pdf_data = list(pdfs_collection.find({}, {
                 "class_selected": 1,
+                "section_selected": 1,
                 "subject_selected": 1,
                 "pdf_file_path": 1,
-                "question_image_path": 1,
+                "_id": 0
+            }))
+
+            question_data = list(questions_collection.find({}, {
+                "class_selected": 1,
+                "section_selected": 1,
+                "subject_selected": 1,
+                "question_file_path": 1,
                 "_id": 0
             }))
 
             formatted_data = [
                 {
                     "class": class_map.get(item["class_selected"], "Unknown Class"),
+                    "section": section_map.get(item["section_selected"], "Unknown Section"),
                     "subject": subject_map.get(item["subject_selected"], "Unknown Subject"),
                     "pdf_name": item.get("pdf_file_path", "").split("/")[-1],
-                    "question_name": item.get("question_image_path", "").split("/")[-1]
+                    "question_name": next((q.get("question_file_path", "").split("/")[-1] for q in question_data if q["class_selected"] == item["class_selected"] and q["section_selected"] == item["section_selected"] and q["subject_selected"] == item["subject_selected"]), "N/A")
                 }
                 for item in pdf_data
             ]
@@ -169,6 +181,41 @@ class AdminPdfGetUpload(APIView):
 
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# class AdminPdfGetUpload(APIView):
+#     def get(self, request):
+#         try:
+#             pdfs_collection = get_collection("pdf_questions")
+#             classes_collection = get_collection("classes")
+#             subjects_collection = get_collection("subjects")
+
+#             classes = list(classes_collection.find({}, {"_id": 1, "name": 1}))
+#             subjects = list(subjects_collection.find({}, {"_id": 1, "name": 1}))
+
+#             class_map = {str(cls["_id"]): cls["name"] for cls in classes}
+#             subject_map = {str(sub["_id"]): sub["name"] for sub in subjects}
+
+#             pdf_data = list(pdfs_collection.find({}, {
+#                 "class_selected": 1,
+#                 "subject_selected": 1,
+#                 "pdf_file_path": 1,
+#                 "question_image_path": 1,
+#                 "_id": 0
+#             }))
+
+#             formatted_data = [
+#                 {
+#                     "class": class_map.get(item["class_selected"], "Unknown Class"),
+#                     "subject": subject_map.get(item["subject_selected"], "Unknown Subject"),
+#                     "pdf_name": item.get("pdf_file_path", "").split("/")[-1],
+#                     "question_name": item.get("question_image_path", "").split("/")[-1]
+#                 }
+#                 for item in pdf_data
+#             ]
+
+#             return Response({"pdf_uploads": formatted_data}, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 class AdminPdfDeleteUpload(APIView):
     def delete(self, request, pdf_file_path):
@@ -185,44 +232,6 @@ class AdminPdfDeleteUpload(APIView):
             # If no matching document is found
 
 
-    
-class ClassListCreateAPI(APIView):
-
-    def get(self, request):
-        classes_collection = get_collection("classes")
-        classes = list(classes_collection.find({}))
-        for cls in classes:
-            cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
-        return Response(classes, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        data = request.data
-        classes_collection = get_collection("classes")
-        if classes_collection.find_one({"name": data["name"]}):
-            return Response({"error": "Class already exists"}, status=400)
-        classes_collection.insert_one(data)
-        return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
-
-
-class SubjectListCreateAPI(APIView):
-    
-    def get(self, request, id=None):
-        subjects_collection = get_collection("subjects")
-        if id:
-            subjects = list(subjects_collection.find({"associated_class_id": id}))
-        else:
-            subjects = list(subjects_collection.find({}))
-        for subject in subjects:
-            subject["_id"] = str(subject["_id"]) 
-        return Response(subjects, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        data = request.data
-        subjects_collection = get_collection("subjects")
-        if subjects_collection.find_one({"name": data["name"], "associated_class_id": data["associated_class_id"]}):
-            return Response({"error": "Subject already exists for this class"}, status=400)
-        subjects_collection.insert_one(data)
-        return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
 
 
 class ResultRetrieveAPI(APIView):
