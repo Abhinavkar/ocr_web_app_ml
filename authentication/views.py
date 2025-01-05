@@ -99,6 +99,8 @@ class Register_Org_Sub_Admin_User_View(APIView):
             'is_user':is_user,
             "department":department,
             "section_assigned":section_assigned,
+            "organization":organization,
+            "email":email
           }
            
             try:

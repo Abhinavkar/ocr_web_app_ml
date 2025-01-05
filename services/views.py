@@ -151,6 +151,16 @@ class ClassListCreateAPI(APIView):
     
 class SectionListCreateAPI(APIView):
     
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsSuperStaff() and IsAdmin()]  
+        elif self.request.method == 'DELETE':
+            return [IsSuperStaff() and IsAdmin()]  
+        elif self.request.method == 'PUT':
+            return [IsSuperStaff() and IsAdmin()] 
+        return super().get_permissions()
+
+    
     def get(self, request, class_id=None):
         if not class_id:
             return Response({"message": "Class ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -177,22 +187,37 @@ class SectionListCreateAPI(APIView):
         return Response({"message": "Section created successfully"}, status=status.HTTP_201_CREATED)
 
     def delete(self, request, id):
+        user_id = request.headers.get('userId')
+        user_collection = get_collection('auth_users')
         sections_collection = get_collection("sections")
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            
         result = sections_collection.delete_one({"_id": ObjectId(id)})
         if result.deleted_count == 0:
             return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Section deleted successfully"}, status=status.HTTP_200_OK)
 
     def put(self, request, id):
+        user_id = request.headers.get('userId')
+        user_collection = get_collection('auth_users')
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not (user.get('is_admin') or user.get('is_sub_admin')):
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
         data = request.data
         if not data:
             return Response({"message": "Please provide the data to update"}, status=status.HTTP_400_BAD_REQUEST)
+        
         sections_collection = get_collection("sections")
         result = sections_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
         if result.matched_count == 0:
             return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Section updated successfully"}, status=status.HTTP_200_OK)
-    
     
 
 class SubjectListCreateAPI(APIView):
