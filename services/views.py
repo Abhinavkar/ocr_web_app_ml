@@ -66,7 +66,7 @@ class Organization_View(APIView):
 
 
 class ClassListCreateAPI(APIView):
-    
+
 
     def get(self, request, id=None):
         classes_collection = get_collection("classes")
@@ -214,3 +214,20 @@ class ClassListAll(APIView):
             for cls in classes:
                 cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
             return Response(classes, status=status.HTTP_200_OK)
+        
+class SubjectGetById(APIView):
+      def get(self, request, id=None):
+        subject_collection = get_collection("subjects")
+        if id:
+            classes = subject_collection.find_one({"_id": ObjectId(id)})
+            if classes:
+                classes["_id"] = str(classes["_id"])  # Convert ObjectId to string
+                return Response(classes, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            classes = list(classes_collection.find())
+            for cls in classes:
+                cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
+            return Response(classes, status=status.HTTP_200_OK)
+        

@@ -70,13 +70,10 @@ class AdminPdfUpload(APIView):
 
 class AdminQuestionUpload(APIView):
     def post(self, request):
-        # Common inputs
         class_selected = request.data.get('class_selected')
         subject_selected = request.data.get('subject_selected')
         exam_id = request.data.get('exam_id')
-        upload_type = request.data.get('upload_type')  # 'pdf' or 'image'
-
-        # File inputs
+        upload_type = request.data.get('upload_type')  
         course_pdf = request.FILES.get('course_pdf')
         question_file = request.FILES.get('question_image') or request.FILES.get('question_pdf')
 
@@ -91,14 +88,10 @@ class AdminQuestionUpload(APIView):
 
         try:
             if upload_type == 'pdf':
-                # Save and process Course PDF
                 fs = FileSystemStorage()
                 course_pdf_path = fs.save(course_pdf.name, course_pdf)
                 course_pdf_full_path = fs.path(course_pdf_path)
-
-                # Process the Course PDF as needed
                 print("Processing Course PDF...")
-                # Save Course PDF metadata (example only)
                 questions_collection = get_collection("course_pdf_db")
                 questions_collection.insert_one({
                     "class_selected": class_selected,
@@ -109,12 +102,9 @@ class AdminQuestionUpload(APIView):
                 return Response({"message": "Course PDF uploaded successfully."}, status=200)
 
             elif upload_type == 'image':
-                # Save and process Question File (PDF/Image)
                 fs = FileSystemStorage()
                 question_file_path = fs.save(question_file.name, question_file)
                 question_file_full_path = fs.path(question_file_path)
-
-                # Process question file (e.g., extract text for PDFs)
                 if question_file.name.endswith('.pdf'):
                     print("Processing Question PDF...")
                     question_extracted_text = extract_text_from_pdf(question_file_full_path)
@@ -131,7 +121,7 @@ class AdminQuestionUpload(APIView):
                         "question_sentence_embeddings": question_sentence_embeddings.tolist()
                     })
                 else:
-                    # For images, only save metadata
+                
                     print("Processing Question Image...")
                     questions_collection = get_collection("question_db")
                     questions_collection.insert_one({
@@ -146,111 +136,7 @@ class AdminQuestionUpload(APIView):
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
 
-class DocumentListAPI(APIView):
-    def get(self, request):
-        # Extract class_id, section_id, and subject_id from query parameters
-        class_id = request.query_params.get('class_id')
-        section_id = request.query_params.get('section_id')
-        subject_id = request.query_params.get('subject_id')
 
-        # Validate the required fields
-        if not class_id or not section_id or not subject_id:
-            return Response({"message": "Class, Section, and Subject must be provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Fetch the Class Data
-        classes_collection = get_collection("classes")
-        class_data = classes_collection.find_one({"_id": ObjectId(class_id)})
-        if not class_data:
-            return Response({"message": "Class not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Fetch the Section Data
-        sections_collection = get_collection("sections")
-        section_data = sections_collection.find_one({"_id": ObjectId(section_id)})
-        if not section_data:
-            return Response({"message": "Section not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Fetch the Subject Data
-        subjects_collection = get_collection("subjects")
-        subject_data = subjects_collection.find_one({"_id": ObjectId(subject_id)})
-        if not subject_data:
-            return Response({"message": "Subject not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Fetch PDFs from the pdf_books collection
-        pdfs_collection = get_collection("pdf_books")
-        pdf_documents = list(pdfs_collection.find({
-            "class_id": class_id,
-            "subject": subject_data["name"],
-            "section": section_data["name"]
-        }))
-
-        # Fetch Question Papers from the question_db collection
-        questions_collection = get_collection("question_db")
-        question_documents = list(questions_collection.find({
-            "class_id": class_id,
-            "subject": subject_data["name"],
-            "section": section_data["name"]
-        }))
-
-        # Format the PDF documents
-        for doc in pdf_documents:
-            doc["_id"] = str(doc["_id"])  # Convert ObjectId to string
-            doc["pdf_file_url"] = doc["pdf_file_path"]  # Add the PDF file URL to the response
-
-        # Format the Question documents
-        for doc in question_documents:
-            doc["_id"] = str(doc["_id"])  # Convert ObjectId to string
-            doc["pdf_file_url"] = doc["pdf_file_path"]  # Add the PDF file URL to the response
-
-        # Combine the results for documents
-        all_documents = {
-            "class": class_data["name"], 
-            "section": section_data["name"],
-            "subject": subject_data["name"],
-            "pdf_documents": pdf_documents,
-            "question_documents": question_documents
-        }
-
-        return Response(all_documents, status=status.HTTP_200_OK)
-
-
-
-
-# class AdminPdfGetUpload(APIView):
-#     def get(self, request):
-#         try:
-#             pdfs_collection = get_collection("pdf_questions")
-#             classes_collection = get_collection("classes")
-#             subjects_collection = get_collection("subjects")
-
-#             classes = list(classes_collection.find({}, {"_id": 1, "name": 1}))
-#             subjects = list(subjects_collection.find({}, {"_id": 1, "name": 1}))
-
-#             class_map = {str(cls["_id"]): cls["name"] for cls in classes}
-#             subject_map = {str(sub["_id"]): sub["name"] for sub in subjects}
-
-#             pdf_data = list(pdfs_collection.find({}, {
-#                 "class_selected": 1,
-#                 "subject_selected": 1,
-#                 "pdf_file_path": 1,
-#                 "question_image_path": 1,
-#                 "_id": 0
-#             }))
-
-#             formatted_data = [
-#                 {
-#                     "class": class_map.get(item["class_selected"], "Unknown Class"),
-#                     "subject": subject_map.get(item["subject_selected"], "Unknown Subject"),
-#                     "pdf_name": item.get("pdf_file_path", "").split("/")[-1],
-#                     "question_name": item.get("question_image_path", "").split("/")[-1]
-#                 }
-#                 for item in pdf_data
-#             ]
-
-#             return Response({"pdf_uploads": formatted_data}, status=status.HTTP_200_OK)
-
-#         except Exception as e:
-#             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 class AdminPdfDeleteUpload(APIView):
     def delete(self, request, pdf_file_path):
         try:
@@ -266,11 +152,13 @@ class AdminPdfDeleteUpload(APIView):
             # If no matching document is found
 
 
-
-
 class ResultRetrieveAPI(APIView):
     def get(self, request, object_id=None):
+        org_id = request.headers.get('orgId')
+
         results_collection = get_collection("answers_db")
+        
+
         
         if object_id:
             try:
@@ -444,4 +332,4 @@ class AnswerUploadAPI(APIView):
         except Exception as e:
             print("Unexpected error:", str(e))
             return Response({"message": "Internal server error", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+  # Common inputs
