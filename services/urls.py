@@ -19,5 +19,9 @@ urlpatterns = [
 
 
     path('class/<str:id>/', ClassListAll.as_view(), name='class-list-all'),
+    
+    path('classes/delete/<str:id>/', ClassListCreateAPI.as_view(), name='delete_class'),
+    path('classes/update/<str:id>/',ClassListCreateAPI.as_view(), name='update_class'),
+    
 
     ]

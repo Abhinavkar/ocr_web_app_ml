@@ -2,7 +2,7 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+
 from authentication.db_wrapper import get_collection
 from authentication.permissions import IsAdmin, IsSubAdmin,IsSuperStaff,IsUser
 from bson.objectid import ObjectId
@@ -11,11 +11,11 @@ class Organization_View(APIView):
 
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsAuthenticated(), IsSuperStaff()]  
+            return [IsSuperStaff()]  
         elif self.request.method == 'DELETE':
-            return [IsAuthenticated(), IsSuperStaff()]  
+            return [IsSuperStaff()]  
         elif self.request.method == 'PUT':
-            return [IsAuthenticated(), IsSuperStaff()] 
+            return [IsSuperStaff()] 
         return super().get_permissions()
     
     def get(self, request):
@@ -67,8 +67,17 @@ class Organization_View(APIView):
 
 class ClassListCreateAPI(APIView):
 
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsSuperStaff() and IsAdmin()]  
+        elif self.request.method == 'DELETE':
+            return [IsSuperStaff() and IsAdmin()]  
+        elif self.request.method == 'PUT':
+            return [IsSuperStaff() and IsAdmin()] 
+        return super().get_permissions()
 
     def get(self, request, id=None):
+        
         classes_collection = get_collection("classes")
         if id:
             classes = list(classes_collection.find({"organization_id": id}))
@@ -95,12 +104,49 @@ class ClassListCreateAPI(APIView):
         classes_collection.insert_one(data)
         return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
     
-    def delete(self, request):
-        return 
     
-    def put(self, request):
-        return
+    def delete(self, request, id):
+        user_id=request.headers.get('userId')
+        user_collection = get_collection('auth_users')
+        classes_collection = get_collection("classes")
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        class_obj = classes_collection.find_one({"_id": ObjectId(id)})
+        class_org = class_obj.get('organization_id')
+        if not user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        user_org_id = user.get('organization')
+        print(user_org_id , class_org)
+        if user_org_id != class_org:
+            return Response({"error": "hii Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        
+        result = classes_collection.delete_one({"_id": ObjectId(id)})
+        if result.deleted_count == 0:
+            return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Class deleted successfully"}, status=status.HTTP_200_OK)
     
+    
+    def put(self, request, id):
+        user_id = request.headers.get('userId')
+        user_collection = get_collection('auth_users')
+        classes_collection = get_collection("classes")
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        class_obj = classes_collection.find_one({"_id": ObjectId(id)})
+        class_org = class_obj.get('organization_id')
+        if not user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        user_org_id = user.get('organization')
+        print(user_org_id, class_org)
+        if user_org_id != class_org:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        
+        new_class_name = request.data.get('name')
+        if not new_class_name:
+            return Response({"message": "Please provide the new class name"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        result = classes_collection.update_one({"_id": ObjectId(id)}, {"$set": {"name": new_class_name}})
+        if result.matched_count == 0:
+            return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "Class name updated successfully"}, status=status.HTTP_200_OK)
 
     
 class SectionListCreateAPI(APIView):
