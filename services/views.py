@@ -69,11 +69,12 @@ class ClassListCreateAPI(APIView):
 
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsSuperStaff() and IsAdmin()]  
+            return [ IsAdmin()]  
         elif self.request.method == 'DELETE':
-            return [IsSuperStaff() and IsAdmin()]  
+            print("Checking permission")
+            return [IsAdmin()]  
         elif self.request.method == 'PUT':
-            return [IsSuperStaff() and IsAdmin()] 
+            return [IsAdmin()] 
         return super().get_permissions()
 
     def get(self, request, id=None):
@@ -276,4 +277,3 @@ class SubjectGetById(APIView):
             for cls in classes:
                 cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
             return Response(classes, status=status.HTTP_200_OK)
-        

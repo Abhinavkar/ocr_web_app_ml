@@ -9,6 +9,8 @@ class IsAdmin(BasePermission):
             return False
         users_collection = get_collection('auth_users')
         user = users_collection.find_one({"_id": ObjectId(user_id)})
+        print(user)
+
         return user and user.get('is_admin', False)
 
 class IsSuperStaff(BasePermission):

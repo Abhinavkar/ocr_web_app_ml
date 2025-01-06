@@ -25,8 +25,8 @@ class AdminPdfUpload(APIView):
             pdf_file = request.FILES.get('course_pdf') 
             exam_id = request.data.get('exam_id')
             
-            # Debugging statements
-            print(f"Received data: class_selected={class_id}, subject_selected={subject}, section_selected={section}")
+            # # Debugging statements
+            # print(f"Received data: class_selected={class_id}, subject_selected={subject}, section_selected={section}")
             
             if not class_id or not subject or not section:
                 return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
