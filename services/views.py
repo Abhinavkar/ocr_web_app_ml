@@ -258,8 +258,25 @@ class OrgSectionListAPI(APIView):
             return Response(sections, status=status.HTTP_200_OK)
         
         return Response({"message": "No sections found for this organization."}, status=status.HTTP_404_NOT_FOUND)
+    
+    
+class OrgSubjectListAPI(APIView):
+    def get(self, request, organization_id=None):
+        if not organization_id:
+            return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        subjects_collection = get_collection("subjects")
+        print(f"Fetching subjects for organization_id: {organization_id}")
+        subjects = list(subjects_collection.find({"organization_id": organization_id}))
 
+        if subjects:
+            for subject in subjects:
+                subject["_id"] = str(subject["_id"])  # Convert ObjectId to string
+            return Response(subjects, status=status.HTTP_200_OK)
+        
+        return Response({"message": "No subjects found for this organization."}, status=status.HTTP_404_NOT_FOUND)
+    
+    
 class SubjectListCreateAPI(APIView):
     def get(self, request, section_id=None):
         subjects_collection = get_collection("subjects")
@@ -278,7 +295,6 @@ class SubjectListCreateAPI(APIView):
     def post(self, request):
         data = request.data
         
-        # Validate that name, associated_section_id, and organization_id are provided
         if not data.get("name") or not data.get("associated_section_id") or not data.get("organization_id"):
             return Response(
                 {"message": "Please provide subject name, associated section ID, and organization ID."},
