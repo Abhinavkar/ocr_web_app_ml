@@ -325,90 +325,6 @@ class ClassListAll(APIView):
             for cls in classes:
                 cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
             return Response(classes, status=status.HTTP_200_OK)
-<<<<<<< HEAD
-
-class DocumentListAPI(APIView):
-    def get(self, request):
-        try:
-            # Fetch user ID from request header
-            user_id = request.headers.get("userId")
-            if not user_id:
-                return Response(
-                    {"message": "User ID is required in the request header"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            question_db_collection = get_collection('question_db')
-            pdf_books_collection = get_collection('pdf_books')
-            auth_users_collection = get_collection('auth_users')
-
-            # Check if user exists
-            user = auth_users_collection.find_one({"_id": ObjectId(user_id)})
-            if not user:
-                return Response(
-                    {"message": "Invalid user ID or user not found"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-
-            data = {}
-
-            # Fetch class_selected, subject_selected, and question_file_path
-            try:
-                questions = question_db_collection.find({}, {
-                    "class_selected": 1,
-                    "subject_selected": 1,
-                    "question_file_path": 1,
-                })
-                data["questions"] = [
-                    {
-                        "class_selected": question.get("class_selected"),
-                        "subject_selected": question.get("subject_selected"),
-                        "question_file_path": question.get("question_file_path"),
-                    }
-                    for question in questions
-                ]
-            except Exception as e:
-                data["questions_error"] = str(e)
-
-            # Fetch PDF book details
-            try:
-                pdf_books = pdf_books_collection.find({}, {
-                    "subject": 1,
-                    "section": 1,
-                    "pdf_file_path": 1,
-                })
-                data["pdf_books"] = [
-                    {
-                        "section": pdf_book.get("section"),
-                        "subject": pdf_book.get("subject"),
-                        "pdf_file_path": pdf_book.get("pdf_file_path"),
-                    }
-                    for pdf_book in pdf_books
-                ]
-            except Exception as e:
-                data["pdf_books_error"] = str(e)
-
-            # Fetch user data
-            try:
-                users = auth_users_collection.find({}, {"_id": 1, "organization": 1})
-                data["user_data"] = [
-                    {
-                        "user_id": str(user["_id"]),
-                        "organization_id": str(user.get("organization", "N/A")),  # Handle missing organization_id
-                    }
-                    for user in users
-                ]
-            except Exception as e:
-                data["user_data_error"] = str(e)
-
-            return Response(data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response(
-                {"message": "An unexpected error occurred while fetching data", "error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-=======
         
 class SubjectGetById(APIView):
       def get(self, request, id=None):
@@ -425,4 +341,3 @@ class SubjectGetById(APIView):
             for cls in classes:
                 cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
             return Response(classes, status=status.HTTP_200_OK)
->>>>>>> 2c55dff981a41cec9d57c80406704b5291655db1
