@@ -164,19 +164,20 @@ class SectionListCreateAPI(APIView):
         return super().get_permissions()
 
     
-    def get(self, request, class_id=None):
-        if not class_id:
-            return Response({"message": "Class ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+    def get(self, request, organization_id=None):
+        if not organization_id:
+            return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         sections_collection = get_collection("sections")  # Assuming 'sections' is the collection name in MongoDB
-        sections = list(sections_collection.find({"class_id": class_id}))
+        sections = list(sections_collection.find({"organization_id": organization_id}))
 
         if sections:
             for section in sections:
                 section["_id"] = str(section["_id"])  # Convert ObjectId to string
             return Response(sections, status=status.HTTP_200_OK)
         
-        return Response({"message": "No sections found for this class."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "No sections found for this organization."}, status=status.HTTP_404_NOT_FOUND)
+
     def post(self, request):
         data = request.data
         

@@ -17,7 +17,7 @@ urlpatterns = [
     path('update/subjects/<str:id>/', SubjectListCreateAPI.as_view(), name='subject-update'),
     path('delete/subjects/<str:id>/', SubjectListCreateAPI.as_view(), name='subject-delete'),
     path('sections/', SectionListCreateAPI.as_view(), name='section-list'),
-    path('sections/<str:class_id>/', SectionListCreateAPI.as_view(), name='section-class'),
+    path('sections/<str:organization_id>/', SectionListCreateAPI.as_view(), name='section-class'),
     path('sections/update/<str:id>/', SectionListCreateAPI.as_view(), name='section-update'),
     path('sections/delete/<str:id>/', SectionListCreateAPI.as_view(), name='section-delete'),
 
