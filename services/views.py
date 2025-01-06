@@ -94,16 +94,17 @@ class ClassListCreateAPI(APIView):
         if not data.get("name") or not data.get("organization_id"):
             return Response({"message": "Please provide both class name and organization ID"}, status=status.HTTP_400_BAD_REQUEST)
 
-        data["organization_id"] = data.get("organization_id")
+        organization_id = data.get("organization_id")
         
+        organizations_collection = get_collection("organization_db")
+        organization = organizations_collection.find_one({"_id": ObjectId(organization_id)})
+        if not organization:
+            return Response({"message": "Invalid organization ID"}, status=status.HTTP_400_BAD_REQUEST)
         classes_collection = get_collection("classes")
-        
-        if classes_collection.find_one({"name": data["name"], "organization_id": data["organization_id"]}):
-            return Response({"error": "Class already exists for this organization"}, status=400)
-        
+        if classes_collection.find_one({"name": data["name"], "organization_id": organization_id}):
+            return Response({"error": "Class already exists for this organization"}, status=status.HTTP_400_BAD_REQUEST)
         classes_collection.insert_one(data)
         return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
-    
     
     def delete(self, request, id):
         user_id=request.headers.get('userId')
@@ -176,13 +177,33 @@ class SectionListCreateAPI(APIView):
         return Response({"message": "No sections found for this class."}, status=status.HTTP_404_NOT_FOUND)
     def post(self, request):
         data = request.data
-        if not data.get("name") or not data.get("class_id"):
-            return Response({"message": "Please provide both section name and class ID"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate that both name, class_id, and organization_id are provided
+        if not data.get("name") or not data.get("class_id") or not data.get("organization_id"):
+            return Response({"message": "Please provide section name, class ID, and organization ID"}, status=status.HTTP_400_BAD_REQUEST)
 
+        class_id = data.get("class_id")
+        organization_id = data.get("organization_id")
+        
+        # Ensure organization_id is valid
+        organizations_collection = get_collection("organization_db")
+        organization = organizations_collection.find_one({"_id": ObjectId(organization_id)})
+        if not organization:
+            return Response({"message": "Invalid organization ID"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Ensure class_id is valid and belongs to the organization
+        classes_collection = get_collection("classes")
+        class_obj = classes_collection.find_one({"_id": ObjectId(class_id), "organization_id": organization_id})
+        if not class_obj:
+            return Response({"message": "Invalid class ID or class does not belong to the organization"}, status=status.HTTP_400_BAD_REQUEST)
+        
         sections_collection = get_collection("sections")
-        if sections_collection.find_one({"name": data["name"], "class_id": data["class_id"]}):
+        
+        # Check if the section already exists for the class
+        if sections_collection.find_one({"name": data["name"], "class_id": class_id}):
             return Response({"error": "Section already exists for this class"}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        # Insert the new section
         sections_collection.insert_one(data)
         return Response({"message": "Section created successfully"}, status=status.HTTP_201_CREATED)
 
@@ -237,19 +258,36 @@ class SubjectListCreateAPI(APIView):
 
     def post(self, request):
         data = request.data
-        if not data.get("name") or not data.get("associated_section_id"):
+        
+        # Validate that name, associated_section_id, and organization_id are provided
+        if not data.get("name") or not data.get("associated_section_id") or not data.get("organization_id"):
             return Response(
-                {"message": "Please provide subject name and associated section ID."},
+                {"message": "Please provide subject name, associated section ID, and organization ID."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        associated_section_id = data.get("associated_section_id")
+        organization_id = data.get("organization_id")
+        
+        # Ensure organization_id is valid
+        organizations_collection = get_collection("organization_db")
+        organization = organizations_collection.find_one({"_id": ObjectId(organization_id)})
+        if not organization:
+            return Response({"message": "Invalid organization ID"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Ensure associated_section_id is valid and belongs to the organization
+        sections_collection = get_collection("sections")
+        section_obj = sections_collection.find_one({"_id": ObjectId(associated_section_id), "organization_id": organization_id})
+        if not section_obj:
+            return Response({"message": "Invalid section ID or section does not belong to the organization"}, status=status.HTTP_400_BAD_REQUEST)
+        
         subjects_collection = get_collection("subjects")
-        if subjects_collection.find_one({
-            "name": data["name"],
-            "associated_section_id": data["associated_section_id"],
-        }):
-            return Response({"error": "Subject already exists for this section"}, status=400)
-
+        
+        # Check if the subject already exists for the section
+        if subjects_collection.find_one({"name": data["name"], "associated_section_id": associated_section_id}):
+            return Response({"error": "Subject already exists for this section"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Insert the new subject
         subjects_collection.insert_one(data)
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
 
