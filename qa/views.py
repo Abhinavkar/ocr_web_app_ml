@@ -56,7 +56,8 @@ class AdminPdfUpload(APIView):
                     "pdf_extracted_text": pdf_extracted_text,
                     "pdf_sentence": pdf_sentence,
                     "pdf_sentence_embeddings": pdf_sentence_embeddings.tolist(),
-                    "exam_id": exam_id
+                    "exam_id": exam_id,
+                    "organization":organization
                 })
 
                 return Response({
@@ -132,7 +133,7 @@ class AdminQuestionUpload(APIView):
                         "subject_selected": subject_selected,
                         "exam_id": exam_id,
                         "question_file_path": question_file_full_path,
-                        "organization":organization
+                        "organization":organization,
                     })
 
                 return Response({"message": "Question file uploaded successfully."}, status=200)
