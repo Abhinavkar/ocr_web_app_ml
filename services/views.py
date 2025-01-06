@@ -254,11 +254,17 @@ class OrgSectionListAPI(APIView):
 
         if sections:
             for section in sections:
-                section["_id"] = str(section["_id"])  # Convert ObjectId to string
+                # Convert ObjectId to string
+                section["_id"] = str(section["_id"])
+
+                # Rename 'name' to 'section_name'
+                if "name" in section:
+                    section["section_name"] = section.pop("name")
+            
             return Response(sections, status=status.HTTP_200_OK)
         
         return Response({"message": "No sections found for this organization."}, status=status.HTTP_404_NOT_FOUND)
-    
+
     
 class OrgSubjectListAPI(APIView):
     def get(self, request, organization_id=None):
