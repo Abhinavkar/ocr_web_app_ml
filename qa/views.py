@@ -24,6 +24,7 @@ class AdminPdfUpload(APIView):
             section = request.data.get('section_selected')
             pdf_file = request.FILES.get('course_pdf') 
             exam_id = request.data.get('exam_id')
+            organization = request.data.get('organization')
             
             # # Debugging statements
             # print(f"Received data: class_selected={class_id}, subject_selected={subject}, section_selected={section}")
@@ -55,7 +56,8 @@ class AdminPdfUpload(APIView):
                     "pdf_extracted_text": pdf_extracted_text,
                     "pdf_sentence": pdf_sentence,
                     "pdf_sentence_embeddings": pdf_sentence_embeddings.tolist(),
-                    "exam_id": exam_id
+                    "exam_id": exam_id,
+                    "organization":organization
                 })
 
                 return Response({
@@ -76,6 +78,7 @@ class AdminQuestionUpload(APIView):
         upload_type = request.data.get('upload_type')  
         course_pdf = request.FILES.get('course_pdf')
         question_file = request.FILES.get('question_image') or request.FILES.get('question_pdf')
+        organization = request.data.get('organization')
 
         if not class_selected or not subject_selected:
             return Response({"message": "Class and Subject must be selected."}, status=400)
@@ -118,7 +121,8 @@ class AdminQuestionUpload(APIView):
                         "question_file_path": question_file_full_path,
                         "question_extracted_text": question_extracted_text,
                         "question_sentence": question_sentence,
-                        "question_sentence_embeddings": question_sentence_embeddings.tolist()
+                        "question_sentence_embeddings": question_sentence_embeddings.tolist(),
+                        "organization":organization
                     })
                 else:
                 
@@ -129,6 +133,7 @@ class AdminQuestionUpload(APIView):
                         "subject_selected": subject_selected,
                         "exam_id": exam_id,
                         "question_file_path": question_file_full_path,
+                        "organization":organization,
                     })
 
                 return Response({"message": "Question file uploaded successfully."}, status=200)
