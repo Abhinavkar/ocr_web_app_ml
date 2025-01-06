@@ -34,6 +34,17 @@ class Register_Org_Admin_User_View(APIView):
                 return Response({"error": f"User with username {username} already exists"}, status=400)
 
             hashed_password = make_password(password)
+            class_collection = get_collection('classes')
+            section_collection = get_collection('sections')
+            try:
+                department_name = class_collection.find_one({"_id": ObjectId(department)})['name']
+                section_name = section_collection.find_one({"_id": ObjectId(section_assigned)})['name']
+                print("Sections are ",department_name, section_name)
+            except Exception as e:
+                print(f"Error fetching department and section: {e}")
+                return Response({"message": "Error fetching department and section"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+           
             admin_user = {
                 "username": username,
                 "password": hashed_password,
@@ -46,7 +57,9 @@ class Register_Org_Admin_User_View(APIView):
                 'is_user': True,
                 "department": department,
                 "section_assigned": section_assigned,
-                "organization":organization
+                "organization":organization,
+                'department_name': department_name,
+                'section_name': section_name,
             }
            
             try:
@@ -88,6 +101,17 @@ class Register_Org_Sub_Admin_User_View(APIView):
             if users_collection.find_one({"username": data["username"]}):
                 return Response({"error": f"user with this {username} already exists"}, status=400)
             hashed_password = make_password(data["password"])
+            class_collection = get_collection('classes')
+            section_collection = get_collection('sections')
+            try:
+                department_name = class_collection.find_one({"_id": ObjectId(department)})['name']
+                section_name = section_collection.find_one({"_id": ObjectId(section_assigned)})['name']
+                print("Sections are ",department_name, section_name)
+            except Exception as e:
+                print(f"Error fetching department and section: {e}")
+                return Response({"message": "Error fetching department and section"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+           
             admin_user = {
             "username": username,
             "password": hashed_password,
@@ -97,10 +121,12 @@ class Register_Org_Sub_Admin_User_View(APIView):
             "is_super_staff": is_superstaff,
             "is_sub_admin": is_sub_admin,
             'is_user':is_user,
-            "department":department,
+            "class":department,
             "section_assigned":section_assigned,
             "organization":organization,
-            "email":email
+            "email":email,
+            'department_name': department_name,
+            'section_name': section_name,
           }
            
             try:
@@ -145,6 +171,17 @@ class Register_Org_User_View(APIView):
             if users_collection.find_one({"username": data["username"]}):
                 return Response({"error": f"user with this {username} already exists"}, status=400)
             hashed_password = make_password(data["password"])
+            class_collection = get_collection('classes')
+            section_collection = get_collection('sections')
+            try:
+                department_name = class_collection.find_one({"_id": ObjectId(department)})['name']
+                section_name = section_collection.find_one({"_id": ObjectId(section_assigned)})['name']
+              
+            except Exception as e:
+                print(f"Error fetching department and section: {e}")
+                return Response({"message": "Error fetching department and section"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+           
             admin_user = {
             "username": username,
             "password": hashed_password,
@@ -155,9 +192,12 @@ class Register_Org_User_View(APIView):
             "is_super_staff": is_superstaff,
             "is_sub_admin": is_sub_admin,
             'is_user':is_user,
-            "department":department,
+            "class":department,
             "section_assigned":section_assigned,
-            "organization":organization
+            "organization":organization,
+            'department_name': department_name,
+            'section_name': section_name,
+            
           }
            
             try:
