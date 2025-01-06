@@ -312,43 +312,43 @@ def upload_files(request):
     return render(request, 'qa/upload.html')
     
     
-class ClassListCreateAPI(APIView):
+# class ClassListCreateAPI(APIView):
 
-    def get(self, request):
-        classes_collection = get_collection("classes")
-        classes = list(classes_collection.find({}))
-        for cls in classes:
-            cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
-        return Response(classes, status=status.HTTP_200_OK)
+#     def get(self, request):
+#         classes_collection = get_collection("classes")
+#         classes = list(classes_collection.find({}))
+#         for cls in classes:
+#             cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
+#         return Response(classes, status=status.HTTP_200_OK)
 
-    def post(self, request):
-        data = request.data
-        classes_collection = get_collection("classes")
-        if classes_collection.find_one({"name": data["name"]}):
-            return Response({"error": "Class already exists"}, status=400)
-        classes_collection.insert_one(data)
-        return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
+#     def post(self, request):
+#         data = request.data
+#         classes_collection = get_collection("classes")
+#         if classes_collection.find_one({"name": data["name"]}):
+#             return Response({"error": "Class already exists"}, status=400)
+#         classes_collection.insert_one(data)
+#         return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
 
 
-class SubjectListCreateAPI(APIView):
+# class SubjectListCreateAPI(APIView):
     
-    def get(self, request, id=None):
-        subjects_collection = get_collection("subjects")
-        if id:
-            subjects = list(subjects_collection.find({"associated_class_id": id}))
-        else:
-            subjects = list(subjects_collection.find({}))
-        for subject in subjects:
-            subject["_id"] = str(subject["_id"]) 
-        return Response(subjects, status=status.HTTP_200_OK)
+#     def get(self, request, id=None):
+#         subjects_collection = get_collection("subjects")
+#         if id:
+#             subjects = list(subjects_collection.find({"associated_class_id": id}))
+#         else:
+#             subjects = list(subjects_collection.find({}))
+#         for subject in subjects:
+#             subject["_id"] = str(subject["_id"]) 
+#         return Response(subjects, status=status.HTTP_200_OK)
 
-    def post(self, request):
-        data = request.data
-        subjects_collection = get_collection("subjects")
-        if subjects_collection.find_one({"name": data["name"], "associated_class_id": data["associated_class_id"]}):
-            return Response({"error": "Subject already exists for this class"}, status=400)
-        subjects_collection.insert_one(data)
-        return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
+#     def post(self, request):
+#         data = request.data
+#         subjects_collection = get_collection("subjects")
+#         if subjects_collection.find_one({"name": data["name"], "associated_class_id": data["associated_class_id"]}):
+#             return Response({"error": "Subject already exists for this class"}, status=400)
+#         subjects_collection.insert_one(data)
+#         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
 
 
 class ResultRetrieveAPI(APIView):
