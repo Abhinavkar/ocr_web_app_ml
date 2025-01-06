@@ -1,4 +1,5 @@
 
+from bson import ObjectId
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
@@ -383,7 +384,90 @@ class SubjectGetById(APIView):
             else:
                 return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
         else:
+            classes_collection = get_collection("classes")
             classes = list(classes_collection.find())
             for cls in classes:
                 cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
             return Response(classes, status=status.HTTP_200_OK)
+
+class DocumentListAPI(APIView):
+    def get(self, request):
+        try:
+           
+            user_id = request.headers.get("userId")
+            if not user_id:
+                return Response(
+                    {"message": "User ID is required in the request header"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            question_db_collection = get_collection('question_db')
+            pdf_books_collection = get_collection('pdf_books')
+            auth_users_collection = get_collection('auth_users')
+
+            
+            user = auth_users_collection.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                return Response(
+                    {"message": "Invalid user ID or user not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            data = {}
+
+           
+            try:
+                questions = question_db_collection.find({}, {
+                    "class_selected": 1,
+                    "subject_selected": 1,
+                    "question_file_path": 1,
+                })
+                data["questions"] = [
+                    {
+                        "class_selected": question.get("class_selected"),
+                        "subject_selected": question.get("subject_selected"),
+                        "question_file_path": question.get("question_file_path"),
+                    }
+                    for question in questions
+                ]
+            except Exception as e:
+                data["questions_error"] = str(e)
+
+            
+            try:
+                pdf_books = pdf_books_collection.find({}, {
+                    "subject": 1,
+                    "section": 1,
+                    "pdf_file_path": 1,
+                })
+                data["pdf_books"] = [
+                    {
+                        "section": pdf_book.get("section"),
+                        "subject": pdf_book.get("subject"),
+                        "pdf_file_path": pdf_book.get("pdf_file_path"),
+                    }
+                    for pdf_book in pdf_books
+                ]
+            except Exception as e:
+                data["pdf_books_error"] = str(e)
+
+            
+            try:
+                users = auth_users_collection.find({}, {"_id": 1, "organization": 1})
+                data["user_data"] = [
+                    {
+                        "user_id": str(user["_id"]),
+                        "organization_id": str(user.get("organization", "N/A")),  # Handle missing organization_id
+                    }
+                    for user in users
+                ]
+            except Exception as e:
+                data["user_data_error"] = str(e)
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"message": "An unexpected error occurred while fetching data", "error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

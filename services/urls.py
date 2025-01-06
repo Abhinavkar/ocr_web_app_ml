@@ -23,6 +23,10 @@ urlpatterns = [
 
 
     path('class/<str:id>/', ClassListAll.as_view(), name='class-list-all'),
+    # document-lists
+    path('documents-list/', DocumentListAPI.as_view(), name='document-list'),
+    path('documents/<str:id>/', DocumentListAPI.as_view(), name='document-delete'),
+
     
     path('classes/delete/<str:id>/', ClassListCreateAPI.as_view(), name='delete_class'),
     path('classes/update/<str:id>/',ClassListCreateAPI.as_view(), name='update_class'),
