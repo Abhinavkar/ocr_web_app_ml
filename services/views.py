@@ -164,20 +164,19 @@ class SectionListCreateAPI(APIView):
         return super().get_permissions()
 
     
-    def get(self, request, organization_id=None):
-        if not organization_id:
-            return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+    def get(self, request, class_id=None):
+        if not class_id:
+            return Response({"message": "Class ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         sections_collection = get_collection("sections")  # Assuming 'sections' is the collection name in MongoDB
-        sections = list(sections_collection.find({"organization_id": organization_id}))
+        sections = list(sections_collection.find({"class_id": class_id}))
 
         if sections:
             for section in sections:
                 section["_id"] = str(section["_id"])  # Convert ObjectId to string
             return Response(sections, status=status.HTTP_200_OK)
         
-        return Response({"message": "No sections found for this organization."}, status=status.HTTP_404_NOT_FOUND)
-
+        return Response({"message": "No sections found for this class."}, status=status.HTTP_404_NOT_FOUND)
     def post(self, request):
         data = request.data
         
@@ -243,6 +242,23 @@ class SectionListCreateAPI(APIView):
             return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Section updated successfully"}, status=status.HTTP_200_OK)
     
+
+class OrgSectionListAPI(APIView):
+    def get(self, request, organization_id=None):
+        if not organization_id:
+            return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        sections_collection = get_collection("sections") 
+        print(f"Fetching sections for organization_id: {organization_id}")
+        sections = list(sections_collection.find({"organization_id": organization_id}))
+
+        if sections:
+            for section in sections:
+                section["_id"] = str(section["_id"])  # Convert ObjectId to string
+            return Response(sections, status=status.HTTP_200_OK)
+        
+        return Response({"message": "No sections found for this organization."}, status=status.HTTP_404_NOT_FOUND)
+
 
 class SubjectListCreateAPI(APIView):
     def get(self, request, section_id=None):
@@ -394,13 +410,6 @@ class SubjectGetById(APIView):
 class DocumentListAPI(APIView):
     def get(self, request):
         try:
-            organization_id = user.get("organization")
-            if not organization_id:
-                return Response(
-                    {"message": "User does not belong to any organization"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
            
             user_id = request.headers.get("userId")
             if not user_id:
@@ -414,7 +423,7 @@ class DocumentListAPI(APIView):
             auth_users_collection = get_collection('auth_users')
 
             
-            user = auth_users_collection.find_one({"organization_id": organization_id},{"_id": ObjectId(user_id)})
+            user = auth_users_collection.find_one({"_id": ObjectId(user_id)})
             if not user:
                 return Response(
                     {"message": "Invalid user ID or user not found"},
@@ -425,10 +434,10 @@ class DocumentListAPI(APIView):
 
            
             try:
-                questions = question_db_collection.find({"organization_id": organization_id}, {
-                    {"class_selected": 1,
+                questions = question_db_collection.find({}, {
+                    "class_selected": 1,
                     "subject_selected": 1,
-                    "question_file_path": 1,}
+                    "question_file_path": 1,
                 })
                 data["questions"] = [
                     {
@@ -443,10 +452,10 @@ class DocumentListAPI(APIView):
 
             
             try:
-                pdf_books = pdf_books_collection.find({"organization_id":organization_id}, {
-                    {"subject": 1,
+                pdf_books = pdf_books_collection.find({}, {
+                    "subject": 1,
                     "section": 1,
-                    "pdf_file_path": 1,}
+                    "pdf_file_path": 1,
                 })
                 data["pdf_books"] = [
                     {
@@ -461,7 +470,7 @@ class DocumentListAPI(APIView):
 
             
             try:
-                users = auth_users_collection.find({"organization_id":organization_id})
+                users = auth_users_collection.find({}, {"_id": 1, "organization": 1})
                 data["user_data"] = [
                     {
                         "user_id": str(user["_id"]),
