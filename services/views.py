@@ -294,22 +294,69 @@ class SubjectListCreateAPI(APIView):
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
 
     def delete(self, request, id):
+        user_id = request.headers.get('userId')
+        user_collection = get_collection('auth_users')
         subjects_collection = get_collection("subjects")
+        sections_collection = get_collection("sections")
+        
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        subject_obj = subjects_collection.find_one({"_id": ObjectId(id)})
+        if not subject_obj:
+            return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        section_obj = sections_collection.find_one({"_id": ObjectId(subject_obj.get('associated_section_id'))})
+        if not section_obj:
+            return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        section_org = section_obj.get('organization_id')
+        user_org_id = user.get('organization')
+        print(user_org_id, section_org)
+        if user_org_id != section_org:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        
         result = subjects_collection.delete_one({"_id": ObjectId(id)})
         if result.deleted_count == 0:
             return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Subject deleted successfully"}, status=status.HTTP_200_OK)
 
     def put(self, request, id):
-        data = request.data
-        if not data:
-            return Response({"message": "Please provide the data to update"}, status=status.HTTP_400_BAD_REQUEST)
+        user_id = request.headers.get('userId')
+        user_collection = get_collection('auth_users')
         subjects_collection = get_collection("subjects")
-        result = subjects_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+        sections_collection = get_collection("sections")
+        print(user_id)
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        print(user)
+        if not user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        subject_obj = subjects_collection.find_one({"_id": ObjectId(id)})
+        if not subject_obj:
+            return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        section_obj = sections_collection.find_one({"_id": ObjectId(subject_obj.get('associated_section_id'))})
+        if not section_obj:
+            return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        section_org = section_obj.get('organization_id')
+        user_org_id = user.get('organization')
+        print(user_org_id, section_org)
+        if user_org_id != section_org:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        new_name = request.data.get('name')
+        if not new_name:
+            return Response({"message": "Please provide the new name"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        result = subjects_collection.update_one({"_id": ObjectId(id)}, {"$set": {"name": new_name}})
         if result.matched_count == 0:
             return Response({"message": "Subject not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Subject updated successfully"}, status=status.HTTP_200_OK)
-
+    
+    
 class ClassListAll(APIView):
     def get(self, request, id=None):
         classes_collection = get_collection("classes")
