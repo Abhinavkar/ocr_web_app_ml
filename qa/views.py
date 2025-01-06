@@ -170,12 +170,12 @@ class ResultRetrieveAPI(APIView):
                 object_id = ObjectId(object_id)
                 print(f"Querying for ObjectId: {object_id}")
                 results = list(results_collection.find({"_id": object_id}))
-                print(f"Query results: {results}")
+                # print(f"Query results: {results}")
             except Exception as e:
                 return Response({"message": f"Invalid ObjectId: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             results = list(results_collection.find({}))
-            print(f"Query results: {results}")
+            # print(f"Query results: {results}")
         
         for result in results:
             result["_id"] = str(result["_id"])  # Convert ObjectId to string
@@ -199,6 +199,8 @@ class AnswerUploadAPI(APIView):
             section = request.data.get('section')
             answer_pdf = request.FILES.get('answer_pdf')
             # user_id = request.data.get('user_id')
+            organization = request.data.get('organization')
+            print(organization)
 
            
             if not roll_no:
@@ -317,6 +319,36 @@ class AnswerUploadAPI(APIView):
             except Exception as e:
                 print("Error processing results:", str(e))
                 return Response({"message": "Error processing results", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                class_collection = get_collection("classes")
+                section_collection = get_collection("sections")
+                subject_collection = get_collection("subjects")
+                class_data = class_collection.find_one({"_id": ObjectId(class_id), "organization_id": organization})
+                if not class_data:
+                    return Response({"error": "Invalid class ID"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                section_data = section_collection.find_one({"class_id": ObjectId(section), "organization_id": organization})
+
+                if not section_data:
+                    return Response({"error": "Invalid section ID"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                associated_subjects = []
+                for subject_id in subject:
+                    try:
+                        subject_data = subject_collection.find_one(
+                            {"_id": ObjectId(subject_id), "associated_section_id": section_data["_id"], "organization_id": organization}
+                        )
+                        if subject_data:
+                            associated_subjects.append({
+                                "id": str(subject_data["_id"]),
+                                "name": subject_data["name"],
+                                "associated_section_id": subject_data["associated_section_id"]
+                            })
+                    except Exception as e:
+                        return Response({"error": f"Invalid subject ID: {subject_id}"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+            except Exception as e:
+                return Response({"error": "Error fetching class/section/subject data", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             
             try:
@@ -330,7 +362,11 @@ class AnswerUploadAPI(APIView):
                     "user_answers": user_answers,
                     "user_answer_embeddings": answer_embeddings,
                     "results": results,
-                    # "user_id":user_id
+                    # "user_id":user_id,
+                    "class_name": class_data["name"],
+                    "section_name": section_data["name"],
+                    "organization_id": class_data["organization_id"],
+                    "subjects": associated_subjects,
                 })
                 print("Results inserted into the database.")
             except Exception as e:
