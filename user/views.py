@@ -13,11 +13,11 @@ class User_Management_Operations(APIView):
 
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsAuthenticated(), IsSuperStaff()]  
+            return [ IsAdmin()]  
         elif self.request.method == 'DELETE':
-            return [IsAuthenticated(), IsSuperStaff()]  
+            return [ IsAdmin()]  
         elif self.request.method == 'PUT':
-            return [IsAuthenticated(), IsSuperStaff()] 
+            return [IsAdmin()] 
         return super().get_permissions()
     
     user_collection = get_collection('auth_users')
@@ -25,21 +25,23 @@ class User_Management_Operations(APIView):
 
     
     def get(self, request):
-        user_header = request.headers.get('user')  # Get the user header
+        user_header = request.headers.get('userId')  # Get the user header
         if not user_header:
             return Response({"error": "User data is required in the headers"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            # Parse the 'user' header as JSON
-            user_header = json.loads(user_header)
-            org_id = user_header.get('organization_id')  # Get the organization_id from the header
-        except json.JSONDecodeError:
-            return Response({"error": "Invalid user header format"}, status=status.HTTP_400_BAD_REQUEST)
-        
+            existing_user = self.user_collection.find_one({"_id": ObjectId(user_header)})
+
+            if not existing_user:
+                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except:
+            return Response({"error": "Invalid user id"}, status=status.HTTP_400_BAD_REQUEST)
+        org_id = existing_user.get('organization')
         if not org_id:
             return Response({"error": "User does not belong to any organization"}, status=status.HTTP_400_BAD_REQUEST)
       
-        users_in_org = list(self.user_collection.find({"organization": org_id}))
+        users_in_org = list(self.user_collection.find({"organization":ObjectId(org_id)}))
+        print(users_in_org)
   
         if not users_in_org:
             return Response({"error": "No users found in the specified organization"}, status=status.HTTP_404_NOT_FOUND)

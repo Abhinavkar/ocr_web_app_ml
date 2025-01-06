@@ -70,11 +70,12 @@ class ClassListCreateAPI(APIView):
 
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsSuperStaff() and IsAdmin()]  
+            return [ IsAdmin()]  
         elif self.request.method == 'DELETE':
-            return [IsSuperStaff() and IsAdmin()]  
+            print("Checking permission")
+            return [IsAdmin()]  
         elif self.request.method == 'PUT':
-            return [IsSuperStaff() and IsAdmin()] 
+            return [IsAdmin()] 
         return super().get_permissions()
 
     def get(self, request, id=None):
@@ -95,16 +96,17 @@ class ClassListCreateAPI(APIView):
         if not data.get("name") or not data.get("organization_id"):
             return Response({"message": "Please provide both class name and organization ID"}, status=status.HTTP_400_BAD_REQUEST)
 
-        data["organization_id"] = data.get("organization_id")
+        organization_id = data.get("organization_id")
         
+        organizations_collection = get_collection("organization_db")
+        organization = organizations_collection.find_one({"_id": ObjectId(organization_id)})
+        if not organization:
+            return Response({"message": "Invalid organization ID"}, status=status.HTTP_400_BAD_REQUEST)
         classes_collection = get_collection("classes")
-        
-        if classes_collection.find_one({"name": data["name"], "organization_id": data["organization_id"]}):
-            return Response({"error": "Class already exists for this organization"}, status=400)
-        
+        if classes_collection.find_one({"name": data["name"], "organization_id": organization_id}):
+            return Response({"error": "Class already exists for this organization"}, status=status.HTTP_400_BAD_REQUEST)
         classes_collection.insert_one(data)
         return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
-    
     
     def delete(self, request, id):
         user_id=request.headers.get('userId')
@@ -152,6 +154,16 @@ class ClassListCreateAPI(APIView):
     
 class SectionListCreateAPI(APIView):
     
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsSuperStaff() and IsAdmin()]  
+        elif self.request.method == 'DELETE':
+            return [IsSuperStaff() and IsAdmin()]  
+        elif self.request.method == 'PUT':
+            return [IsSuperStaff() and IsAdmin()] 
+        return super().get_permissions()
+
+    
     def get(self, request, class_id=None):
         if not class_id:
             return Response({"message": "Class ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -167,33 +179,68 @@ class SectionListCreateAPI(APIView):
         return Response({"message": "No sections found for this class."}, status=status.HTTP_404_NOT_FOUND)
     def post(self, request):
         data = request.data
-        if not data.get("name") or not data.get("class_id"):
-            return Response({"message": "Please provide both section name and class ID"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate that both name, class_id, and organization_id are provided
+        if not data.get("name") or not data.get("class_id") or not data.get("organization_id"):
+            return Response({"message": "Please provide section name, class ID, and organization ID"}, status=status.HTTP_400_BAD_REQUEST)
 
+        class_id = data.get("class_id")
+        organization_id = data.get("organization_id")
+        
+        # Ensure organization_id is valid
+        organizations_collection = get_collection("organization_db")
+        organization = organizations_collection.find_one({"_id": ObjectId(organization_id)})
+        if not organization:
+            return Response({"message": "Invalid organization ID"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Ensure class_id is valid and belongs to the organization
+        classes_collection = get_collection("classes")
+        class_obj = classes_collection.find_one({"_id": ObjectId(class_id), "organization_id": organization_id})
+        if not class_obj:
+            return Response({"message": "Invalid class ID or class does not belong to the organization"}, status=status.HTTP_400_BAD_REQUEST)
+        
         sections_collection = get_collection("sections")
-        if sections_collection.find_one({"name": data["name"], "class_id": data["class_id"]}):
+        
+        # Check if the section already exists for the class
+        if sections_collection.find_one({"name": data["name"], "class_id": class_id}):
             return Response({"error": "Section already exists for this class"}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        # Insert the new section
         sections_collection.insert_one(data)
         return Response({"message": "Section created successfully"}, status=status.HTTP_201_CREATED)
 
     def delete(self, request, id):
+        user_id = request.headers.get('userId')
+        user_collection = get_collection('auth_users')
         sections_collection = get_collection("sections")
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            
         result = sections_collection.delete_one({"_id": ObjectId(id)})
         if result.deleted_count == 0:
             return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Section deleted successfully"}, status=status.HTTP_200_OK)
 
     def put(self, request, id):
+        user_id = request.headers.get('userId')
+        user_collection = get_collection('auth_users')
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not (user.get('is_admin') or user.get('is_sub_admin')):
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
         data = request.data
         if not data:
             return Response({"message": "Please provide the data to update"}, status=status.HTTP_400_BAD_REQUEST)
+        
         sections_collection = get_collection("sections")
         result = sections_collection.update_one({"_id": ObjectId(id)}, {"$set": data})
         if result.matched_count == 0:
             return Response({"message": "Section not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response({"message": "Section updated successfully"}, status=status.HTTP_200_OK)
-    
     
 
 class SubjectListCreateAPI(APIView):
@@ -213,19 +260,36 @@ class SubjectListCreateAPI(APIView):
 
     def post(self, request):
         data = request.data
-        if not data.get("name") or not data.get("associated_section_id"):
+        
+        # Validate that name, associated_section_id, and organization_id are provided
+        if not data.get("name") or not data.get("associated_section_id") or not data.get("organization_id"):
             return Response(
-                {"message": "Please provide subject name and associated section ID."},
+                {"message": "Please provide subject name, associated section ID, and organization ID."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        associated_section_id = data.get("associated_section_id")
+        organization_id = data.get("organization_id")
+        
+        # Ensure organization_id is valid
+        organizations_collection = get_collection("organization_db")
+        organization = organizations_collection.find_one({"_id": ObjectId(organization_id)})
+        if not organization:
+            return Response({"message": "Invalid organization ID"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Ensure associated_section_id is valid and belongs to the organization
+        sections_collection = get_collection("sections")
+        section_obj = sections_collection.find_one({"_id": ObjectId(associated_section_id), "organization_id": organization_id})
+        if not section_obj:
+            return Response({"message": "Invalid section ID or section does not belong to the organization"}, status=status.HTTP_400_BAD_REQUEST)
+        
         subjects_collection = get_collection("subjects")
-        if subjects_collection.find_one({
-            "name": data["name"],
-            "associated_section_id": data["associated_section_id"],
-        }):
-            return Response({"error": "Subject already exists for this section"}, status=400)
-
+        
+        # Check if the subject already exists for the section
+        if subjects_collection.find_one({"name": data["name"], "associated_section_id": associated_section_id}):
+            return Response({"error": "Subject already exists for this section"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Insert the new subject
         subjects_collection.insert_one(data)
         return Response({"message": "Subject created successfully"}, status=status.HTTP_201_CREATED)
 
@@ -261,6 +325,7 @@ class ClassListAll(APIView):
             for cls in classes:
                 cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
             return Response(classes, status=status.HTTP_200_OK)
+<<<<<<< HEAD
 
 class DocumentListAPI(APIView):
     def get(self, request):
@@ -343,3 +408,21 @@ class DocumentListAPI(APIView):
                 {"message": "An unexpected error occurred while fetching data", "error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+=======
+        
+class SubjectGetById(APIView):
+      def get(self, request, id=None):
+        subject_collection = get_collection("subjects")
+        if id:
+            classes = subject_collection.find_one({"_id": ObjectId(id)})
+            if classes:
+                classes["_id"] = str(classes["_id"])  # Convert ObjectId to string
+                return Response(classes, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            classes = list(classes_collection.find())
+            for cls in classes:
+                cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
+            return Response(classes, status=status.HTTP_200_OK)
+>>>>>>> 2c55dff981a41cec9d57c80406704b5291655db1
