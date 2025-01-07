@@ -34,16 +34,7 @@ class Register_Org_Admin_User_View(APIView):
                 return Response({"error": f"User with username {username} already exists"}, status=400)
 
             hashed_password = make_password(password)
-            class_collection = get_collection('classes')
-            section_collection = get_collection('sections')
-            try:
-                department_name = class_collection.find_one({"_id": ObjectId(department)})['name']
-                section_name = section_collection.find_one({"_id": ObjectId(section_assigned)})['name']
-                print("Sections are ",department_name, section_name)
-            except Exception as e:
-                print(f"Error fetching department and section: {e}")
-                return Response({"message": "Error fetching department and section"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+          
            
             admin_user = {
                 "username": username,
@@ -58,14 +49,14 @@ class Register_Org_Admin_User_View(APIView):
                 "department": department,
                 "section_assigned": section_assigned,
                 "organization":organization,
-                'department_name': department_name,
-                'section_name': section_name,
+                'department_name': department,
+                'section_name': section_assigned,
             }
            
             try:
                 subject = "Welcome to the QA Portal"
                 recipient_list = [email]
-                message = (f"You have been registered as an admin user for organization {organization}. You now have access to the Qa portal.\n"
+                message = (f"You have been registered as an admin user for organization . You now have access to the Qa portal.\n"
                            f"Your User ID is: {username}\n"
                            "1. You are a Admin Now for your whole organization\n"
                            "2. Please log in with your credentials, and change your password.\n the default password is 123123\n")
@@ -132,7 +123,7 @@ class Register_Org_Sub_Admin_User_View(APIView):
             try:
                 subject = "Welcome to the QA Portal"
                 recipient_list = [email]
-                message = (f" Welcome to the QA Portal You have been registered as an subadmin by an adminuser of your organization {organization}. You now have access to the Qa portal.\n"
+                message = (f" Welcome to the QA Portal You have been registered as an subadmin by an adminuser of your organization . You now have access to the Qa portal.\n"
                            f"Your User ID is: {username}\n"
                            f"1. Please log in with your credentials, and change your password.\n the default password is 123123\n"
                            f"2. You are a Sub Admin Now for your whole organization\n"
@@ -203,10 +194,10 @@ class Register_Org_User_View(APIView):
             try:
                 subject = "Welcome to the QA Portal"
                 recipient_list = [email]
-                message = (f" Welcome to the QA Portal You have been registered as an User by an adminuser or Subadmin of your organization {organization}. You now have access to the Qa portal.\n"
+                message = (f" Welcome to the QA Portal You have been registered as an User by an adminuser or Subadmin of your organization . You now have access to the Qa portal.\n"
                            f"Your User ID is: {username}\n"
                            f"1. Please log in with your credentials, and change your password.\n the default password is 123123\n"
-                           f"2. You are a Sub Admin Now for your whole organization\n"
+                           f"2. You are a User Now for this organization\n"
                            )
                 
                 send_hr_email(subject, message, recipient_list)
@@ -246,7 +237,7 @@ class LoginUserView(APIView):
                     "first_name": user["first_name"],
                     "last_name": user["last_name"],
                     "email": user["email"],
-                    "department": user["department"],
+                    "department": user.get("department") or user.get('department_name'),
                     "section_assigned": user["section_assigned"],
                     "organization": organization_name,
                     "organization_id":org_id,
