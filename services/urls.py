@@ -35,7 +35,4 @@ urlpatterns = [
     path('documents-list/', DocumentListAPI.as_view(), name='document-list'),
     path('documents/<str:id>/', DocumentListAPI.as_view(), name='document-delete'),
 
-    
-    
-
     ]
