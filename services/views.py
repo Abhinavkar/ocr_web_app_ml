@@ -278,6 +278,9 @@ class OrgSubjectListAPI(APIView):
         if subjects:
             for subject in subjects:
                 subject["_id"] = str(subject["_id"])  # Convert ObjectId to string
+                
+                if "name" in subject:
+                    subject["subject_name"] = subject.pop("name")
             return Response(subjects, status=status.HTTP_200_OK)
         
         return Response({"message": "No subjects found for this organization."}, status=status.HTTP_404_NOT_FOUND)

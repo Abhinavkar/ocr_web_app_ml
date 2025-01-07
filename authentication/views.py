@@ -243,7 +243,33 @@ class LoginUserView(APIView):
                     "organization_id":org_id,
                     "id":user['_id']
                 }, status=200)
-            else:
-                return Response({"message":"Access Denied "},status=status.HTTP_403_FORBIDDEN)
+            else :
+                
+                if user['is_user'] is True :
+                    user['_id'] = str(user['_id'])
+                
+                    org_id = user['organization']
+                    print(org_id)
+                    organization = organizations_collection.find_one({"_id": ObjectId(org_id)})
+                    print(organization)
+                    organization_name = organization["organization_name"] if organization else "Unknown"
+
+                    return Response({
+                        "message": "Admin login successful",
+                        "is_admin": user["is_admin"],
+                        "is_super_staff": user["is_super_staff"],
+                        "is_sub_admin": user["is_sub_admin"],
+                        "is_user": user["is_user"],
+                        "first_name": user["first_name"],
+                        "last_name": user["last_name"],
+                        "email": user["email"],
+                        "department": user.get("department") or user.get('department_name'),
+                        "section_assigned": user["section_assigned"],
+                        "organization": organization_name,
+                        "organization_id":org_id,
+                        "id":user['_id']
+                    }, status=200)
+                else :
+                    return Response({"message":"Access Denied "},status=status.HTTP_403_FORBIDDEN)
         else:
             return Response({"message": "Invalid credentials"}, status=400)
