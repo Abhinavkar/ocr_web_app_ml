@@ -167,81 +167,97 @@ class GeneratedExamIdSaveAPI(APIView):
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# class QuestionPaperUploadSaveAPI(APIView):
-#     def post(self ,request,id=None):
-#         question_pdf = request.FILES.get("question_paper_pdf")
-#         try:
-#             class_id = request.data.get('class_selected')
-#             subject_id = request.data.get('subject_selected')
-#             section_id = request.data.get('section_selected')
-#             organization_id = request.data.get('organization')
+class QuestionPaperUploadSaveAPI(APIView):
+    def post(self ,request,id=None):
+        question_pdf = request.FILES.get("question_paper_pdf")
+        try:
+            class_id = request.data.get('class_selected')
+            subject_id = request.data.get('subject_selected')
+            section_id = request.data.get('section_selected')
+            organization_id = request.data.get('organization')
+            exam_id = request.data.get('examId')
+            user_id = request.headers.get('userId')
             
+            if not user_id:
+                return Response({"message": "User ID is required."}, status=400)
             
+            user_collection = get_collection('auth_users')
+            user = user_collection.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                return Response({"message": "User not found."}, status=404)
             
-#             if not class_id or not subject_id or not section_id:
-#                 return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
+            if not exam_id :
+                return Response({"message": "Exam ID  must be selected"}, status=400)
             
-#             if not question_pdf:
-#                 return Response({"message": "PDF file must be uploaded."}, status=400)
+            if not class_id or not subject_id or not section_id:
+                return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
             
-#             if not question_pdf.name.endswith('.pdf'):
-#                 return Response({"message": "Only PDF files are allowed."}, status=400)
+            if not question_pdf:
+                return Response({"message": "PDF file must be uploaded."}, status=400)
+            
+            if not question_pdf.name.endswith('.pdf'):
+                return Response({"message": "Only PDF files are allowed."}, status=400)
 
-#             fs = FileSystemStorage()
-#             question_file_path = fs.save(question_pdf.name, question_pdf)
-#             pdf_file_full_path = fs.path(question_file_path)
+            fs = FileSystemStorage()
+            question_file_path = fs.save(question_pdf.name, question_pdf)
+            pdf_file_full_path = fs.path(question_file_path)
             
-#             try:
-#                 organization_collection = get_collection("organization_db")
-#                 organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
-#                 if not organization_name:
-#                     return Response({"message": "Invalid organization ID or Not Found"}, status=400)
-#             except Exception as e:
-#                 return Response({"message": "Internal Server Error1"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#             try :
-#                 classes_collection = get_collection("classes")
-#                 class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
-#                 if not class_name:
-#                     return Response({"message": "Invalid class ID"}, status=400)
-#             except Exception as e:
-#                 return Response({"message": "Internal Server Error2"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#             try:
-#                 sections_collection = get_collection("sections")
-#                 section_name = sections_collection.find_one({"_id": ObjectId(section_id)})['name']
-#                 if not section_name:
-#                     return Response({"message": "Invalid section ID"}, status=400)
-#             except Exception as e:
-#                 return Response({"message": "Internal Server Error3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-#             try:
-#                 subjects_collection = get_collection("subjects")
-#                 subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)})['name']
-#                 if not subject_name:
-#                     return Response({"message": "Invalid subject ID"}, status=400)
-#             except Exception as e :
-#                 return Response({"message": "Internal Server Error4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                organization_collection = get_collection("organization_db")
+                organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
+                if not organization_name:
+                    return Response({"message": "Invalid organization ID or Not Found"}, status=400)
+            except Exception as e:
+                return Response({"message": "Internal Server Error1"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try :
+                classes_collection = get_collection("classes")
+                class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
+                if not class_name:
+                    return Response({"message": "Invalid class ID"}, status=400)
+            except Exception as e:
+                return Response({"message": "Internal Server Error2"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                sections_collection = get_collection("sections")
+                section_name = sections_collection.find_one({"_id": ObjectId(section_id)})['name']
+                if not section_name:
+                    return Response({"message": "Invalid section ID"}, status=400)
+            except Exception as e:
+                return Response({"message": "Internal Server Error3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            try:
+                subjects_collection = get_collection("subjects")
+                subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)})['name']
+                if not subject_name:
+                    return Response({"message": "Invalid subject ID"}, status=400)
+            except Exception as e :
+                return Response({"message": "Internal Server Error4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
+            try:
+                examId_collection = get_collection("examId_db")
+                exam_id = examId_collection.find_one({"_id": ObjectId(exam_id)})
+                if not exam_id:
+                    return Response ({"message": "Invalid Exam ID"}, status=400)
+            except Exception as e:
+                return Response({"message":"Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-#             current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-#             exam_id = f"{organization_name}_{class_name}_{section_name}_{subject_name}_{current_timestamp}"
 
-#             question_collection = get_collection("question_paper_db")
-#             question_collection.insert_one({
-#                 "class_id": class_id,
-#                 "subject": subject_id,
-#                 "section": section_id,
-#                 "question_file_path": pdf_file_full_path,
-#                 "exam_id": exam_id,
-#                 "organization_id": organization_id
-#             })  
+            question_collection = get_collection("question_paper_db")
+            question_collection.insert_one({
+                "class_id": class_id,
+                "subject": subject_id,
+                "section": section_id,
+                "question_file_path": pdf_file_full_path,
+                "exam_id": exam_id,
+                "organization_id": organization_id
+            })  
 
-#             return Response({
-#                 "message": "PDF uploaded successfully.",
-#                 "pdf_file_url": pdf_file_full_path
-#             }, status=200)
-#         except Exception as e:
-#             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-#         except Exception as e:
-#             return Response({"message": "Invalid upload type or missing file."}, status=400)
+            return Response({
+                "message": "PDF uploaded successfully.",
+                "pdf_file_url": pdf_file_full_path
+            }, status=200)
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+        except Exception as e:
+            return Response({"message": "Invalid upload type or missing file."}, status=400)
 
 
 # class AnswerUploadSaveAPI(APIView):
