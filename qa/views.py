@@ -111,14 +111,16 @@ class CourseUploadPdfSaveAPI(APIView):
             try:
                 exam_id_collection = get_collection("examId_db")
                 exam_id_collection.insert_one({
-                    "exam_id": exam_id,
+                    "_id": exam_id,
                     "organization_id": organization_id,
                     "class_id": class_id,
                     "subject_id": subject_id,
                     "section_id": section_id,
                     "user_id": user_id,
                     "timestamp": current_timestamp,
-                    "is_active": True
+                    "is_active": True,
+                    "course_uploaded": True,
+                    "question_uploaded": False
                 })
             except Exception as e:
                 return Response({"message": "Failed to store exam_id in examId_db."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -130,7 +132,8 @@ class CourseUploadPdfSaveAPI(APIView):
                 "section": section_id,
                 "pdf_file_path": pdf_file_full_path,
                 "exam_id": exam_id,
-                "organization_id": organization_id
+                "organization_id": organization_id,
+                
             })  
 
             return Response({
@@ -169,8 +172,9 @@ class GeneratedExamIdSaveAPI(APIView):
 
 class QuestionPaperUploadSaveAPI(APIView):
     def post(self ,request,id=None):
-        question_pdf = request.FILES.get("question_paper_pdf")
+        
         try:
+            question_pdf = request.FILES.get("question_paper_pdf")
             class_id = request.data.get('class_selected')
             subject_id = request.data.get('subject_selected')
             section_id = request.data.get('section_selected')
@@ -233,13 +237,22 @@ class QuestionPaperUploadSaveAPI(APIView):
             
             try:
                 examId_collection = get_collection("examId_db")
-                exam_id = examId_collection.find_one({"_id": ObjectId(exam_id)})
+                exam_id = examId_collection.find_one({"_id": exam_id})['_id']
+                exam_id = str(exam_id)
                 if not exam_id:
                     return Response ({"message": "Invalid Exam ID"}, status=400)
             except Exception as e:
+                print(e)
                 return Response({"message":"Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-
+            try:
+                examId_collection.update_one(
+                    {"_id": exam_id},
+                    {"$set": {"question_uploaded": True}}
+                )
+            except Exception as e:
+                return Response({"message": "Failed to update examId_db."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
             question_collection = get_collection("question_paper_db")
             question_collection.insert_one({
                 "class_id": class_id,
@@ -247,11 +260,13 @@ class QuestionPaperUploadSaveAPI(APIView):
                 "section": section_id,
                 "question_file_path": pdf_file_full_path,
                 "exam_id": exam_id,
-                "organization_id": organization_id
+                "organization_id": organization_id,
+                "question_pdf":True
+                
             })  
 
             return Response({
-                "message": "PDF uploaded successfully.",
+                "message": "Question PDF uploaded successfully.",
                 "pdf_file_url": pdf_file_full_path
             }, status=200)
         except Exception as e:
