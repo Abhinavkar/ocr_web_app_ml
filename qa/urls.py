@@ -11,5 +11,6 @@ urlpatterns = [
     
     
     path('upload/course/pdf/',views.CourseUploadPdfSaveAPI.as_view(),name="pdf_upload"),
+    path('generated/exam-id/', views.GeneratedExamIdSaveAPI.as_view(), name="generated_examId"),
     path('upload/question/pdf/', views.QuestionPaperUploadSaveAPI.as_view(),name="question_upload"),
     ]
