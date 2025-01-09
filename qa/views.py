@@ -53,6 +53,15 @@ class CourseUploadPdfSaveAPI(APIView):
             section_id = request.data.get('section_selected')
             pdf_file = request.FILES.get('course_pdf') 
             organization_id = request.data.get('organization')
+            user_id = request.headers.get('userId')
+            
+            if not user_id:
+                return Response({"message": "User ID is required."}, status=400)
+            
+            user_collection = get_collection('auth_users')
+            user = user_collection.find_one({"_id": ObjectId(user_id)})
+            if not user:
+                return Response({"message": "User not found."}, status=404)
             
             if not class_id or not subject_id or not section_id:
                 return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
@@ -96,10 +105,9 @@ class CourseUploadPdfSaveAPI(APIView):
             except Exception as e :
                 return Response({"message": "Internal Server Error4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            
             current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             exam_id = f"{organization_name[:3]}_{class_name[:1]}{class_name[-1]}_{section_name[:1]}{section_name[-1]}_{subject_name[:1]}_{current_timestamp}"
-            
+
             try:
                 exam_id_collection = get_collection("examId_db")
                 exam_id_collection.insert_one({
@@ -108,12 +116,13 @@ class CourseUploadPdfSaveAPI(APIView):
                     "class_id": class_id,
                     "subject_id": subject_id,
                     "section_id": section_id,
-                    "timestamp": current_timestamp
+                    "user_id": user_id,
+                    "timestamp": current_timestamp,
+                    "is_active": True
                 })
             except Exception as e:
                 return Response({"message": "Failed to store exam_id in examId_db."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            
             pdfs_collection = get_collection("course_pdf")
             pdfs_collection.insert_one({
                 "class_id": class_id,
@@ -131,10 +140,8 @@ class CourseUploadPdfSaveAPI(APIView):
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
         except Exception as e:
-            return Response({"message": "Invalid upload type or missing file."}, status=400)
+            return Response({"message": "Invalid upload type or missing file."}, status=400)    
 
-        
-        
 
 
 class QuestionPaperUploadSaveAPI(APIView):
