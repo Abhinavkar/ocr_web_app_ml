@@ -19,21 +19,6 @@ from datetime import datetime
 
 
 
-class AdminPdfDeleteUpload(APIView):
-    def delete(self, request, pdf_file_path):
-        try:
-            pdfs_collection = get_collection("pdf_questions")
-            result = pdfs_collection.delete_one({"pdf_file_path": {"$regex": pdf_file_path}})
-            
-            if result.deleted_count == 1:
-                return Response({"message": "Document deleted successfully."}, status=status.HTTP_200_OK)
-            
-            return Response({"message": "Document not found."}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            # If no matching document is found
-
-
 class ResultRetrieveAPI(APIView):
     def get(self, request, object_id=None):
         org_id = request.headers.get('orgId')
@@ -89,7 +74,7 @@ class CourseUploadPdfSaveAPI(APIView):
                     return Response({"message": "Invalid organization ID or Not Found"}, status=400)
             except Exception as e:
                 return Response({"message": "Internal Server Error1"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try :
+            try:
                 classes_collection = get_collection("classes")
                 class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
                 if not class_name:
@@ -113,8 +98,22 @@ class CourseUploadPdfSaveAPI(APIView):
             
             
             current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            exam_id = f"{organization_name}_{class_name}_{section_name}_{subject_name}_{current_timestamp}"
+            exam_id = f"{organization_name[:3]}_{class_name[:1]}{class_name[-1]}_{section_name[:1]}{section_name[-1]}_{subject_name[:1]}_{current_timestamp}"
+            
+            try:
+                exam_id_collection = get_collection("examId_db")
+                exam_id_collection.insert_one({
+                    "exam_id": exam_id,
+                    "organization_id": organization_id,
+                    "class_id": class_id,
+                    "subject_id": subject_id,
+                    "section_id": section_id,
+                    "timestamp": current_timestamp
+                })
+            except Exception as e:
+                return Response({"message": "Failed to store exam_id in examId_db."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+            
             pdfs_collection = get_collection("course_pdf")
             pdfs_collection.insert_one({
                 "class_id": class_id,
@@ -133,6 +132,7 @@ class CourseUploadPdfSaveAPI(APIView):
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
         except Exception as e:
             return Response({"message": "Invalid upload type or missing file."}, status=400)
+
         
         
 
