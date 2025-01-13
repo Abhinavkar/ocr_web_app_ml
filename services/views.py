@@ -574,8 +574,8 @@ class ExamIdById(APIView):
             return Response({"exam_ids": exam_id_list}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
+        
+                
 class DetailsAllAPI(APIView):
     def get(self, request):
         organization_id = request.headers.get('organizationId')
@@ -593,18 +593,22 @@ class DetailsAllAPI(APIView):
             classes_collection = get_collection("classes")
             classes = list(classes_collection.find({"organization_id": organization_id}))
             class_names = [cls.get('name') for cls in classes]
+            class_count = len(classes)
 
             sections_collection = get_collection("sections")
             sections = list(sections_collection.find({"organization_id": organization_id}))
             section_names = [section.get('name') for section in sections]
+            section_count = len(sections)
 
             subjects_collection = get_collection("subjects")
             subjects = list(subjects_collection.find({"organization_id": organization_id}))
             subject_names = [subject.get('name') for subject in subjects]
+            subject_count = len(subjects)
 
             exam_id_collection = get_collection("examId_db")
             exam_ids = list(exam_id_collection.find({"organization_id": organization_id}))
             exam_id_list = [str(exam["_id"]) for exam in exam_ids]
+            exam_count = len(exam_ids)
 
             user_collection = get_collection('auth_users')
             admin_count = user_collection.count_documents({"is_admin": True, "organization": organization_id})
@@ -620,9 +624,13 @@ class DetailsAllAPI(APIView):
             return Response({
                 "organization_name": organization_name,
                 "class_names": class_names,
+                "class_count": class_count,
                 "section_names": section_names,
+                "section_count": section_count,
                 "subject_names": subject_names,
+                "subject_count": subject_count,
                 "exam_ids": exam_id_list,
+                "exam_count": exam_count,
                 "admin_count": admin_count,
                 "sub_admin_count": sub_admin_count,
                 "super_staff_count": super_staff_count,
