@@ -146,29 +146,6 @@ class CourseUploadPdfSaveAPI(APIView):
             return Response({"message": "Invalid upload type or missing file."}, status=400)    
 
 
-class GeneratedExamIdSaveAPI(APIView):
-    def get(self, request):
-        user_id = request.headers.get('userId')
-        
-        if not user_id:
-            return Response({"message": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        user_collection = get_collection('auth_users')
-        user = user_collection.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        try:
-            exam_id_collection = get_collection("examId_db")
-            exam_ids = list(exam_id_collection.find({"user_id": user_id}))
-
-            for exam_id in exam_ids:
-                exam_id["_id"] = str(exam_id["_id"])
-
-            return Response({"exam_ids": exam_ids}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class QuestionPaperUploadSaveAPI(APIView):
     def post(self ,request,id=None):
@@ -355,7 +332,3 @@ class QuestionPaperUploadSaveAPI(APIView):
 #             print("Unexpected error:", str(e))
 #             return Response({"message": "Internal server error", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 #   # Common inputs
-
-
-
-
