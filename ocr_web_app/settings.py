@@ -39,7 +39,11 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'Authorization',
     'Content-Type',
     'user',
-    'userId'
+    'userId',
+    "organizationId",
+    "subjectId",
+    "classId",
+    "sectionId"
 
 ]
 CORS_ALLOW_METHODS = [

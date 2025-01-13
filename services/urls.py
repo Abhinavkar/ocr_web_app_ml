@@ -35,4 +35,8 @@ urlpatterns = [
     path('documents-list/', DocumentListAPI.as_view(), name='document-list'),
     path('documents/<str:id>/', DocumentListAPI.as_view(), name='document-delete'),
 
+    path('generated/exam-id/', GeneratedExamIdAPI.as_view(), name="generated_examId"),
+    path('get/exam-id/',ExamIdById.as_view(), name="get_examId"),
+    
+    path('details-all/', DetailsAllAPI.as_view(), name="details_all"),
     ]
