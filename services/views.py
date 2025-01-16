@@ -539,6 +539,66 @@ class GeneratedExamIdAPI(APIView):
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+    def put(self, request):
+        user_id = request.headers.get('userId')
+        exam_id = request.data.get('examId')
+        is_active = request.data.get('is_active')
+        
+        if not user_id:
+            return Response({"message": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not exam_id:
+            return Response({"message": "Exam ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if is_active is None:
+            return Response({"message": "is_active flag is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_collection = get_collection('auth_users')
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            exam_id_collection = get_collection("examId_db")
+            result = exam_id_collection.update_one(
+                {"_id": exam_id, "user_id": user_id},
+                {"$set": {"is_active": is_active}}
+            )
+            
+            if result.matched_count == 0:
+                return Response({"message": "Exam ID not found or not authorized to update."}, status=status.HTTP_404_NOT_FOUND)
+            
+            return Response({"message": "Exam ID updated successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+    def delete(self, request):
+        user_id = request.headers.get('userId')
+        exam_id = request.data.get('examId')
+        
+        if not user_id:
+            return Response({"message": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not exam_id:
+            return Response({"message": "Exam ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_collection = get_collection('auth_users')
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            exam_id_collection = get_collection("examId_db")
+            result = exam_id_collection.delete_one({"_id": (exam_id), "user_id": user_id})
+            
+            if result.deleted_count == 0:
+                return Response({"message": "Exam ID not found or not authorized to delete."}, status=status.HTTP_404_NOT_FOUND)
+            
+            return Response({"message": "Exam ID deleted successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 class ExamIdById(APIView):
     def get(self, request):
         # user_id = request.headers.get('userId')
@@ -609,12 +669,15 @@ class DetailsAllAPI(APIView):
             exam_ids = list(exam_id_collection.find({"organization_id": organization_id}))
             exam_id_list = [str(exam["_id"]) for exam in exam_ids]
             exam_count = len(exam_ids)
+            active_count = sum(1 for exam in exam_ids if exam.get('is_active', False))
+            inactive_count = exam_count - active_count
 
             user_collection = get_collection('auth_users')
             admin_count = user_collection.count_documents({"is_admin": True, "organization": organization_id})
             sub_admin_count = user_collection.count_documents({"is_sub_admin": True, "organization": organization_id})
             super_staff_count = user_collection.count_documents({"is_super_staff": True, "organization": organization_id})
             user_count = user_collection.count_documents({"is_user": True, "organization": organization_id})
+            total_user_count = user_collection.count_documents({})
 
             admin_details = list(user_collection.find({"is_admin": True, "organization": organization_id}, {"_id": 0, "name": 1, "email": 1}))
             sub_admin_details = list(user_collection.find({"is_sub_admin": True, "organization": organization_id}, {"_id": 0, "name": 1, "email": 1}))
@@ -631,10 +694,13 @@ class DetailsAllAPI(APIView):
                 "subject_count": subject_count,
                 "exam_ids": exam_id_list,
                 "exam_count": exam_count,
+                "active_exam_count": active_count,
+                "inactive_exam_count": inactive_count,
                 "admin_count": admin_count,
                 "sub_admin_count": sub_admin_count,
                 "super_staff_count": super_staff_count,
                 "user_count": user_count,
+                "total_user_count": total_user_count,
                 "admin_details": admin_details,
                 "sub_admin_details": sub_admin_details,
                 "super_staff_details": super_staff_details,
