@@ -74,11 +74,13 @@ class CourseUploadPdfSaveAPI(APIView):
             
             if not pdf_file.name.endswith('.pdf'):
                 return Response({"message": "Only PDF files are allowed."}, status=400)
+            try:
+                upload_result = cloudinary.uploader.upload(pdf_file, resource_type="raw")
+                pdf_file_url = upload_result.get("url")
+            except Exception as e:
+                print("Error uploading PDF to Cloudinary:", str(e))
+                return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            fs = FileSystemStorage()
-            pdf_file_path = fs.save(pdf_file.name, pdf_file)
-            pdf_file_full_path = fs.path(pdf_file_path)
-            
             try:
                 organization_collection = get_collection("organization_db")
                 organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
@@ -133,7 +135,7 @@ class CourseUploadPdfSaveAPI(APIView):
                 "class_id": class_id,
                 "subject": subject_id,
                 "section": section_id,
-                "pdf_file_path": pdf_file_full_path,
+                "pdf_file_path": pdf_file_url,
                 "exam_id": exam_id,
                 "organization_id": organization_id,
                 
@@ -141,7 +143,7 @@ class CourseUploadPdfSaveAPI(APIView):
 
             return Response({
                 "message": "PDF uploaded successfully.",
-                "pdf_file_url": pdf_file_full_path
+                "pdf_file_url": pdf_file_url
             }, status=200)
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
@@ -162,7 +164,7 @@ class QuestionPaperUploadSaveAPI(APIView):
             organization_id = request.data.get('organization')
             exam_id = request.data.get('exam_id')
             user_id = request.headers.get('userId')
-            
+
             print(exam_id)
             
             if not user_id:
@@ -185,9 +187,10 @@ class QuestionPaperUploadSaveAPI(APIView):
             if not question_pdf.name.endswith('.pdf'):
                 return Response({"message": "Only PDF files are allowed."}, status=400)
 
-            # Upload the PDF file to Cloudinary
+          
             try:
                 upload_result = cloudinary.uploader.upload(question_pdf, resource_type="raw")
+                print(upload_result)
                 pdf_file_url = upload_result.get("url")
             except Exception as e:
                 return Response({"message": "Failed to upload PDF to Cloudinary."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
