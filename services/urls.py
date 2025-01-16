@@ -37,6 +37,8 @@ urlpatterns = [
 
     path('generated/exam-id/', GeneratedExamIdAPI.as_view(), name="generated_examId"),
     path('get/exam-id/',ExamIdById.as_view(), name="get_examId"),
+    path('update/exam-id/', GeneratedExamIdAPI.as_view(), name="update_examId"),
+    path('delete/exam-id/', GeneratedExamIdAPI.as_view(), name="delete_examId"),
     
     path('details-all/', DetailsAllAPI.as_view(), name="details_all"),
     ]

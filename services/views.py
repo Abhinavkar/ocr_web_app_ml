@@ -539,6 +539,66 @@ class GeneratedExamIdAPI(APIView):
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+    def put(self, request):
+        user_id = request.headers.get('userId')
+        exam_id = request.data.get('examId')
+        is_active = request.data.get('is_active')
+        
+        if not user_id:
+            return Response({"message": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not exam_id:
+            return Response({"message": "Exam ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if is_active is None:
+            return Response({"message": "is_active flag is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_collection = get_collection('auth_users')
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            exam_id_collection = get_collection("examId_db")
+            result = exam_id_collection.update_one(
+                {"_id": exam_id, "user_id": user_id},
+                {"$set": {"is_active": is_active}}
+            )
+            
+            if result.matched_count == 0:
+                return Response({"message": "Exam ID not found or not authorized to update."}, status=status.HTTP_404_NOT_FOUND)
+            
+            return Response({"message": "Exam ID updated successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+    def delete(self, request):
+        user_id = request.headers.get('userId')
+        exam_id = request.data.get('examId')
+        
+        if not user_id:
+            return Response({"message": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not exam_id:
+            return Response({"message": "Exam ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_collection = get_collection('auth_users')
+        user = user_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            exam_id_collection = get_collection("examId_db")
+            result = exam_id_collection.delete_one({"_id": (exam_id), "user_id": user_id})
+            
+            if result.deleted_count == 0:
+                return Response({"message": "Exam ID not found or not authorized to delete."}, status=status.HTTP_404_NOT_FOUND)
+            
+            return Response({"message": "Exam ID deleted successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 class ExamIdById(APIView):
     def get(self, request):
         # user_id = request.headers.get('userId')
