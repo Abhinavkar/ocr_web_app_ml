@@ -149,6 +149,7 @@ class CourseUploadPdfSaveAPI(APIView):
 
 class QuestionPaperUploadSaveAPI(APIView):
     def post(self ,request,id=None):
+        print(request.data)
         
         try:
             question_pdf = request.FILES.get("question_paper_pdf")
@@ -156,8 +157,9 @@ class QuestionPaperUploadSaveAPI(APIView):
             subject_id = request.data.get('subject_selected')
             section_id = request.data.get('section_selected')
             organization_id = request.data.get('organization')
-            exam_id = request.data.get('examId')
+            exam_id = request.data.get('exam_id')
             user_id = request.headers.get('userId')
+            print(exam_id)
             
             if not user_id:
                 return Response({"message": "User ID is required."}, status=400)
