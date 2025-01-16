@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    "cloudinary",
 
 
 
@@ -200,3 +201,16 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'backendhrms@gmail.com'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'fyyv ybzd lsac kchd'   # The app password you generated
+
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
+
+# Configuration       
+cloudinary.config( 
+    cloud_name = "dl6rs6af4", 
+    api_key = "418452416951998", 
+    api_secret = "JEbJBI8538wjBYCgiwLU4rx4rHU", 
+    secure=True
+)
+CLOUDINARY_URL='cloudinary://418452416951998:JEbJBI8538wjBYCgiwLU4rx4rHU@dl6rs6af4'

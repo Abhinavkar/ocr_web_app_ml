@@ -16,6 +16,9 @@ import ast
 from qa.utils import process_uploaded_files
 fs = FileSystemStorage() 
 from datetime import datetime
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
 
 
 
@@ -148,7 +151,7 @@ class CourseUploadPdfSaveAPI(APIView):
 
 
 class QuestionPaperUploadSaveAPI(APIView):
-    def post(self ,request,id=None):
+    def post(self, request, id=None):
         print(request.data)
         
         try:
@@ -159,6 +162,7 @@ class QuestionPaperUploadSaveAPI(APIView):
             organization_id = request.data.get('organization')
             exam_id = request.data.get('exam_id')
             user_id = request.headers.get('userId')
+            
             print(exam_id)
             
             if not user_id:
@@ -169,8 +173,8 @@ class QuestionPaperUploadSaveAPI(APIView):
             if not user:
                 return Response({"message": "User not found."}, status=404)
             
-            if not exam_id :
-                return Response({"message": "Exam ID  must be selected"}, status=400)
+            if not exam_id:
+                return Response({"message": "Exam ID must be selected"}, status=400)
             
             if not class_id or not subject_id or not section_id:
                 return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
@@ -181,10 +185,14 @@ class QuestionPaperUploadSaveAPI(APIView):
             if not question_pdf.name.endswith('.pdf'):
                 return Response({"message": "Only PDF files are allowed."}, status=400)
 
-            fs = FileSystemStorage()
-            question_file_path = fs.save(question_pdf.name, question_pdf)
-            pdf_file_full_path = fs.path(question_file_path)
+            # Upload the PDF file to Cloudinary
+            try:
+                upload_result = cloudinary.uploader.upload(question_pdf, resource_type="raw")
+                pdf_file_url = upload_result.get("url")
+            except Exception as e:
+                return Response({"message": "Failed to upload PDF to Cloudinary."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
+
             try:
                 organization_collection = get_collection("organization_db")
                 organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
@@ -192,7 +200,7 @@ class QuestionPaperUploadSaveAPI(APIView):
                     return Response({"message": "Invalid organization ID or Not Found"}, status=400)
             except Exception as e:
                 return Response({"message": "Internal Server Error1"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try :
+            try:
                 classes_collection = get_collection("classes")
                 class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
                 if not class_name:
@@ -211,7 +219,7 @@ class QuestionPaperUploadSaveAPI(APIView):
                 subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)})['name']
                 if not subject_name:
                     return Response({"message": "Invalid subject ID"}, status=400)
-            except Exception as e :
+            except Exception as e:
                 return Response({"message": "Internal Server Error4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             try:
@@ -219,10 +227,10 @@ class QuestionPaperUploadSaveAPI(APIView):
                 exam_id = examId_collection.find_one({"_id": exam_id})['_id']
                 exam_id = str(exam_id)
                 if not exam_id:
-                    return Response ({"message": "Invalid Exam ID"}, status=400)
+                    return Response({"message": "Invalid Exam ID"}, status=400)
             except Exception as e:
                 print(e)
-                return Response({"message":"Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             try:
                 examId_collection.update_one(
@@ -237,21 +245,18 @@ class QuestionPaperUploadSaveAPI(APIView):
                 "class_id": class_id,
                 "subject": subject_id,
                 "section": section_id,
-                "question_file_path": pdf_file_full_path,
+                "question_file_url": pdf_file_url,  # Store the Cloudinary URL
                 "exam_id": exam_id,
                 "organization_id": organization_id,
-                "question_pdf":True
-                
+                "question_pdf": True
             })  
 
             return Response({
                 "message": "Question PDF uploaded successfully.",
-                "pdf_file_url": pdf_file_full_path
+                "pdf_file_url": pdf_file_url
             }, status=200)
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-        except Exception as e:
-            return Response({"message": "Invalid upload type or missing file."}, status=400)
 
 
 
@@ -341,6 +346,3 @@ class AnswerUploadAPI(APIView):
         except Exception as e:
             print("Unexpected error:", str(e))
             return Response({"message": "Internal server error", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        
-        

@@ -602,7 +602,6 @@ class GeneratedExamIdAPI(APIView):
 class ExamIdById(APIView):
     def get(self, request):
         # user_id = request.headers.get('userId')
-        print(request.headers)
         organization_id = request.headers.get('organizationId')
         class_id = request.headers.get('classId')
         section_id = request.headers.get('sectionId')
