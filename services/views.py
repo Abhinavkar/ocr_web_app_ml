@@ -609,12 +609,15 @@ class DetailsAllAPI(APIView):
             exam_ids = list(exam_id_collection.find({"organization_id": organization_id}))
             exam_id_list = [str(exam["_id"]) for exam in exam_ids]
             exam_count = len(exam_ids)
+            active_count = sum(1 for exam in exam_ids if exam.get('is_active', False))
+            inactive_count = exam_count - active_count
 
             user_collection = get_collection('auth_users')
             admin_count = user_collection.count_documents({"is_admin": True, "organization": organization_id})
             sub_admin_count = user_collection.count_documents({"is_sub_admin": True, "organization": organization_id})
             super_staff_count = user_collection.count_documents({"is_super_staff": True, "organization": organization_id})
             user_count = user_collection.count_documents({"is_user": True, "organization": organization_id})
+            total_user_count = user_collection.count_documents({})
 
             admin_details = list(user_collection.find({"is_admin": True, "organization": organization_id}, {"_id": 0, "name": 1, "email": 1}))
             sub_admin_details = list(user_collection.find({"is_sub_admin": True, "organization": organization_id}, {"_id": 0, "name": 1, "email": 1}))
@@ -631,10 +634,13 @@ class DetailsAllAPI(APIView):
                 "subject_count": subject_count,
                 "exam_ids": exam_id_list,
                 "exam_count": exam_count,
+                "active_exam_count": active_count,
+                "inactive_exam_count": inactive_count,
                 "admin_count": admin_count,
                 "sub_admin_count": sub_admin_count,
                 "super_staff_count": super_staff_count,
                 "user_count": user_count,
+                "total_user_count": total_user_count,
                 "admin_details": admin_details,
                 "sub_admin_details": sub_admin_details,
                 "super_staff_details": super_staff_details,
