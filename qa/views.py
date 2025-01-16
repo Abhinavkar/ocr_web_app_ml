@@ -298,13 +298,11 @@ class AnswerUploadAPI(APIView):
 
             # Save PDF file
             try:
-                fs = FileSystemStorage()
-                filename = f"{exam_id}_{roll_no}_{answer_pdf.name}"
-                answer_pdf_path = fs.save(filename, answer_pdf)
-                answer_pdf_path = fs.path(answer_pdf_path)
+                upload_result = cloudinary.uploader.upload(answer_pdf, resource_type="raw")
+                pdf_file_url = upload_result.get("url")
             except Exception as e:
-                print("Error saving PDF:", str(e))
-                return Response({"message": "Internal Server Error while saving PDF"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                print("Error uploading PDF to Cloudinary:", str(e))
+                return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Fetch class, section, and subject data
             try:
@@ -334,7 +332,7 @@ class AnswerUploadAPI(APIView):
                     "class_name": class_data,
                     "section_name": section_data,
                     "subject_name": subject_data,
-                    "answer_pdf_path": answer_pdf_path,
+                    "answer_pdf_path": pdf_file_url,
                     "is_uploaded": True,
                     "is_evaluated": False,
                     "is_reevaluated": False,
