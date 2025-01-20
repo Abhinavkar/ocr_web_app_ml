@@ -675,7 +675,13 @@ class DetailsAllAPI(APIView):
             admin_count = user_collection.count_documents({"is_admin": True, "organization": organization_id})
             sub_admin_count = user_collection.count_documents({"is_sub_admin": True, "organization": organization_id})
             super_staff_count = user_collection.count_documents({"is_super_staff": True, "organization": organization_id})
-            user_count = user_collection.count_documents({"is_user": True, "organization": organization_id})
+            user_count = user_collection.count_documents({
+                "is_user": True,
+                "is_super_staff": False,
+                "is_admin": False,
+                "is_sub_admin": False,
+                "organization": organization_id
+            })
             # total_user_count = user_collection.count_documents({"organization": organization_id})
             total_user_count = admin_count + sub_admin_count + super_staff_count + user_count
 
