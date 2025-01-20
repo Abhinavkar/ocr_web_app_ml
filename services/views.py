@@ -700,6 +700,7 @@ class DetailsAllAPI(APIView):
                 "super_staff_count": super_staff_count,
                 "user_count": user_count,
                 "total_user_count": total_user_count,
+                "department_count":"",
                 "admin_details": admin_details,
                 "sub_admin_details": sub_admin_details,
                 "super_staff_details": super_staff_details,
