@@ -118,7 +118,7 @@ class ClassListCreateAPI(APIView):
         if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         user_org_id = user.get('organization')
-        print(user_org_id , class_org)
+    
         if user_org_id != class_org:
             return Response({"error": "hii Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
@@ -138,7 +138,7 @@ class ClassListCreateAPI(APIView):
         if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         user_org_id = user.get('organization')
-        print(user_org_id, class_org)
+
         if user_org_id != class_org:
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
@@ -355,7 +355,7 @@ class SubjectListCreateAPI(APIView):
         
         section_org = section_obj.get('organization_id')
         user_org_id = user.get('organization')
-        print(user_org_id, section_org)
+    
         if user_org_id != section_org:
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
@@ -369,9 +369,9 @@ class SubjectListCreateAPI(APIView):
         user_collection = get_collection('auth_users')
         subjects_collection = get_collection("subjects")
         sections_collection = get_collection("sections")
-        print(user_id)
+    
         user = user_collection.find_one({"_id": ObjectId(user_id)})
-        print(user)
+    
         if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         
@@ -385,7 +385,7 @@ class SubjectListCreateAPI(APIView):
         
         section_org = section_obj.get('organization_id')
         user_org_id = user.get('organization')
-        print(user_org_id, section_org)
+      
         if user_org_id != section_org:
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 

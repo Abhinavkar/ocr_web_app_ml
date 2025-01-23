@@ -191,7 +191,7 @@ class QuestionPaperUploadSaveAPI(APIView):
             try:
                 upload_result = cloudinary.uploader.upload(question_pdf, resource_type="raw")
                 print(upload_result)
-                pdf_file_url = upload_result.get("url")
+                pdf_file_url = upload_result.get("secure_url")
             except Exception as e:
                 return Response({"message": "Failed to upload PDF to Cloudinary."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
@@ -299,7 +299,7 @@ class AnswerUploadAPI(APIView):
             # Save PDF file
             try:
                 upload_result = cloudinary.uploader.upload(answer_pdf, resource_type="raw")
-                pdf_file_url = upload_result.get("url")
+                pdf_file_url = upload_result.get("secure_url")
             except Exception as e:
                 print("Error uploading PDF to Cloudinary:", str(e))
                 return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
