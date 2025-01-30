@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views 
-from .views import  ResultRetrieveAPI, CourseUploadPdfSaveAPI
+from .views import  ResultRetrieveAPI
 
 
 urlpatterns = [
@@ -13,5 +13,6 @@ urlpatterns = [
     path('upload/course/pdf/',views.CourseUploadPdfSaveAPI.as_view(),name="pdf_upload"),
     path('upload/question/pdf/', views.QuestionPaperUploadSaveAPI.as_view(),name="question_upload"),
     
-    path('upload/answers/', views.AnswerUploadAPI.as_view(), name="answer_upload")
+    path('upload/answers/', views.AnswerUploadAPI.as_view(), name="answer_upload"),
+    
     ]

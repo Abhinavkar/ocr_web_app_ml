@@ -19,7 +19,12 @@ from datetime import datetime
 import cloudinary
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
-from django.conf import settings
+from transformers import BertTokenizer, BertModel
+import torch
+from PyPDF2 import PdfReader
+import faiss
+import numpy as np
+
 
 
 class ResultRetrieveAPI(APIView):
@@ -251,7 +256,8 @@ class QuestionPaperUploadSaveAPI(APIView):
                 "question_file_url": pdf_file_url,  # Store the Cloudinary URL
                 "exam_id": exam_id,
                 "organization_id": organization_id,
-                "question_pdf": True
+                "question_uploaded": True,
+                "process_qa":False
             })  
 
             return Response({
@@ -341,3 +347,118 @@ class AnswerUploadAPI(APIView):
         except Exception as e:
             print("Unexpected error:", str(e))
             return Response({"message": "Internal server error", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+
+# class ChapterUploadAPI(APIView):
+#     def post(self, request):
+#         try:
+#             class_id = request.data.get('class_selected')
+#             subject_id = request.data.get('subject_selected')
+#             section_id = request.data.get('section_selected')
+#             pdf_file = request.FILES.get('chapter_pdf')
+#             organization_id = request.data.get('organization')
+#             user_id = request.headers.get('userId')
+
+#             if not user_id:
+#                 return Response({"message": "User ID is required."}, status=400)
+
+#             user_collection = get_collection('auth_users')
+#             user = user_collection.find_one({"_id": ObjectId(user_id)})
+#             if not user:
+#                 return Response({"message": "User not found."}, status=404)
+
+#             if not class_id or not subject_id or not section_id:
+#                 return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
+
+#             if not pdf_file:
+#                 return Response({"message": "PDF file must be uploaded."}, status=400)
+
+#             if not pdf_file.name.endswith('.pdf'):
+#                 return Response({"message": "Only PDF files are allowed."}, status=400)
+
+#             try:
+#                 upload_result = cloudinary.uploader.upload(pdf_file, resource_type="raw")
+#                 pdf_file_url = upload_result.get("url")
+#             except Exception as e:
+#                 print("Error uploading PDF to Cloudinary:", str(e))
+#                 return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#             try:
+#                 organization_collection = get_collection("organization_db")
+#                 organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
+#                 if not organization_name:
+#                     return Response({"message": "Invalid organization ID or Not Found"}, status=400)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error1"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 classes_collection = get_collection("classes")
+#                 class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
+#                 if not class_name:
+#                     return Response({"message": "Invalid class ID"}, status=400)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error2"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 sections_collection = get_collection("sections")
+#                 section_name = sections_collection.find_one({"_id": ObjectId(section_id)})['name']
+#                 if not section_name:
+#                     return Response({"message": "Invalid section ID"}, status=400)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 subjects_collection = get_collection("subjects")
+#                 subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)})['name']
+#                 if not subject_name:
+#                     return Response({"message": "Invalid subject ID"}, status=400)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#             exam_id_collection = get_collection("chapterId_db")
+#             existing_exam = exam_id_collection.find_one({
+#                 "organization_id": organization_id,
+#                 "class_id": class_id,
+#                 "subject_id": subject_id,
+#                 "section_id": section_id,
+#                 "examId_generated": True
+#             })
+
+#             if existing_exam:
+#                 exam_id = existing_exam["_id"]
+#             else:
+#                 current_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+#                 exam_id = f"{organization_name[:3]}_{class_name[:1]}{class_name[-1]}_{section_name[:1]}{section_name[-1]}_{subject_name[:1]}_{current_timestamp}"
+
+#                 try:
+#                     exam_id_collection.insert_one({
+#                         "_id": exam_id,
+#                         "organization_id": organization_id,
+#                         "class_id": class_id,
+#                         "subject_id": subject_id,
+#                         "section_id": section_id,
+#                         "user_id": user_id,
+#                         "timestamp": current_timestamp,
+#                         "is_active": True,
+#                         "chapter_uploaded": True,
+#                         "examId_generated": True
+#                     })
+#                 except Exception as e:
+#                     return Response({"message": "Failed to store exam_id in chapterId_db."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#             pdfs_collection = get_collection("chapter_pdf")
+#             pdfs_collection.insert_one({
+#                 "class_id": class_id,
+#                 "subject": subject_id,
+#                 "section": section_id,
+#                 "pdf_file_path": pdf_file_url,
+#                 "exam_id": exam_id,
+#                 "organization_id": organization_id,
+#             })
+
+#             return Response({
+#                 "message": "Chapter PDF uploaded successfully.",
+#                 "pdf_file_url": pdf_file_url
+#             }, status=200)
+#         except Exception as e:
+#             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
+
