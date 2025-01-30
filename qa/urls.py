@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views 
-from .views import  ResultRetrieveAPI
+from .views import  ResultRetrieveAPI,AnswerUploadAPI
 
 
 urlpatterns = [

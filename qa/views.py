@@ -1,19 +1,16 @@
 from django.shortcuts import render
 from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required 
-from .utils import process_uploaded_files
 from django.core.files.storage import FileSystemStorage
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated , IsAdminUser
 from rest_framework.response import Response
 from rest_framework import generics, status
-from .utils import *
 from authentication.db_wrapper import get_collection
 from bson import ObjectId
-from .utils import extract_text_from_pdf, extract_questions_from_image, get_paragraph_embedding
 from sentence_transformers import util
 import ast 
-from qa.utils import process_uploaded_files
+
 fs = FileSystemStorage() 
 from datetime import datetime
 import cloudinary
@@ -22,7 +19,7 @@ from cloudinary.utils import cloudinary_url
 from transformers import BertTokenizer, BertModel
 import torch
 from PyPDF2 import PdfReader
-import faiss
+
 import numpy as np
 
 
@@ -270,85 +267,85 @@ class QuestionPaperUploadSaveAPI(APIView):
 
 
 class AnswerUploadAPI(APIView):
-    
-    def post(self, request):
-        try:
-            answers_db_collection = get_collection("answers_db")
-            class_collection = get_collection("classes")
-            section_collection = get_collection("sections")
-            subject_collection = get_collection("subjects")
-            roll_no = request.data.get('rollNo')
-            exam_id = request.data.get('examId')
-            class_id = request.data.get('classId')
-            subject = request.data.get('subjectId')
-            section = request.data.get('sectionId')
-            answer_pdf = request.FILES.get('answer_pdf')
-            organization = request.data.get('organizationId')
-
-            if not roll_no:
-                return Response({"error": "Roll number is required"}, status=status.HTTP_400_BAD_REQUEST)
-            if not exam_id:
-                return Response({"error": "Exam ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-            if not class_id:
-                return Response({"error": "Class ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-            if not subject:
-                return Response({"error": "Subject is required"}, status=status.HTTP_400_BAD_REQUEST)
-            if not section:
-                return Response({"error": "Section is required"}, status=status.HTTP_400_BAD_REQUEST)
-            if not answer_pdf:
-                return Response({"error": "Answer PDF is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        def post(self, request):
             try:
-                upload_result = cloudinary.uploader.upload(answer_pdf, resource_type="raw")
-                pdf_file_url = upload_result.get("secure_url")
-            except Exception as e:
-                print("Error uploading PDF to Cloudinary:", str(e))
-                return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try:
-                class_data = class_collection.find_one({"_id": ObjectId(class_id)})['name']
-                if not class_data:
-                    return Response({"error": "Invalid class ID"}, status=status.HTTP_400_BAD_REQUEST)
+                answers_db_collection = get_collection("answers_db")
+                class_collection = get_collection("classes")
+                section_collection = get_collection("sections")
+                subject_collection = get_collection("subjects")
+                roll_no = request.data.get('rollNo')
+                exam_id = request.data.get('examId')
+                class_id = request.data.get('classId')
+                subject = request.data.get('subjectId')
+                section = request.data.get('sectionId')
+                answer_pdf = request.FILES.get('answer_pdf')
+                organization = request.data.get('organizationId')
 
-                section_data = section_collection.find_one({'_id': ObjectId(section)})['name']
-                if not section_data:
-                    return Response({"error": "Invalid section ID"}, status=status.HTTP_400_BAD_REQUEST)
+                if not roll_no:
+                    return Response({"error": "Roll number is required"}, status=status.HTTP_400_BAD_REQUEST)
+                if not exam_id:
+                    return Response({"error": "Exam ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+                if not class_id:
+                    return Response({"error": "Class ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+                if not subject:
+                    return Response({"error": "Subject is required"}, status=status.HTTP_400_BAD_REQUEST)
+                if not section:
+                    return Response({"error": "Section is required"}, status=status.HTTP_400_BAD_REQUEST)
+                if not answer_pdf:
+                    return Response({"error": "Answer PDF is required"}, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    upload_result = cloudinary.uploader.upload(answer_pdf, resource_type="raw")
+                    pdf_file_url = upload_result.get("secure_url")
+                except Exception as e:
+                    print("Error uploading PDF to Cloudinary:", str(e))
+                    return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                try:
+                    class_data = class_collection.find_one({"_id": ObjectId(class_id)})['name']
+                    if not class_data:
+                        return Response({"error": "Invalid class ID"}, status=status.HTTP_400_BAD_REQUEST)
 
-                subject_data = subject_collection.find_one({'_id': ObjectId(subject)})['name']
+                    section_data = section_collection.find_one({'_id': ObjectId(section)})['name']
+                    if not section_data:
+                        return Response({"error": "Invalid section ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    subject_data = subject_collection.find_one({'_id': ObjectId(subject)})['name']
+                except Exception as e:
+                    print("Error fetching metadata:", str(e))
+                    return Response({"error": "Error fetching class/section/subject data", "details": str(e)},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                #CORE LOGIC 
+                
+
+
+                try:
+                    answers_db_collection.insert_one({
+                        "roll_no": roll_no,
+                        "exam_id": exam_id,
+                        "class_id": class_id,
+                        "subject_id": subject,
+                        "section_id": section,
+                        "organization_id": organization,
+                        "class_name": class_data,
+                        "section_name": section_data,
+                        "subject_name": subject_data,
+                        "answer_pdf_path": pdf_file_url,
+                        "is_uploaded": True,
+                        "is_evaluated": False,
+                        "is_reevaluated": False,
+                        "status": "Pending"
+                    })
+                    print("Answer PDF details saved to the database.")
+                except Exception as e:
+                    print("Error saving to database:", str(e))
+                    return Response({"message": "Error saving to database"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                return Response({"message": "Answer PDF uploaded successfully"}, status=status.HTTP_201_CREATED)
             except Exception as e:
-                print("Error fetching metadata:", str(e))
-                return Response({"error": "Error fetching class/section/subject data", "details": str(e)},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            #CORE LOGIC 
+                print("Unexpected error:", str(e))
+                return Response({"message": "Internal server error", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-
-
-            try:
-                answers_db_collection.insert_one({
-                    "roll_no": roll_no,
-                    "exam_id": exam_id,
-                    "class_id": class_id,
-                    "subject_id": subject,
-                    "section_id": section,
-                    "organization_id": organization,
-                    "class_name": class_data,
-                    "section_name": section_data,
-                    "subject_name": subject_data,
-                    "answer_pdf_path": pdf_file_url,
-                    "is_uploaded": True,
-                    "is_evaluated": False,
-                    "is_reevaluated": False,
-                    "status": "Pending"
-                })
-                print("Answer PDF details saved to the database.")
-            except Exception as e:
-                print("Error saving to database:", str(e))
-                return Response({"message": "Error saving to database"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            return Response({"message": "Answer PDF uploaded successfully"}, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            print("Unexpected error:", str(e))
-            return Response({"message": "Internal server error", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        
+            
 
 # class ChapterUploadAPI(APIView):
 #     def post(self, request):

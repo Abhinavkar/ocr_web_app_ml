@@ -212,5 +212,11 @@ cloudinary.config(
     api_secret = "JEbJBI8538wjBYCgiwLU4rx4rHU", 
     secure=True
 )
-OPENAI_API_KEY ='sk-proj-u2OrJMwfPwYvYGMjmIZST3BlbkFJgBAz6Fuwk5CUpvj6qF2W'
+# settings.py
+import environ
+
+env = environ.Env()
+environ.Env.read_env() 
+
+OPENAI_API_KEY = env('OPENAI_API_KEY') 
 CLOUDINARY_URL='cloudinary://418452416951998:JEbJBI8538wjBYCgiwLU4rx4rHU@dl6rs6af4'
