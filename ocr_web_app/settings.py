@@ -214,3 +214,5 @@ cloudinary.config(
     secure=True
 )
 CLOUDINARY_URL='cloudinary://418452416951998:JEbJBI8538wjBYCgiwLU4rx4rHU@dl6rs6af4'
+
+
