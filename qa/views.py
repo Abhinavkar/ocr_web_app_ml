@@ -22,6 +22,12 @@ import torch
 from PyPDF2 import PdfReader
 
 import numpy as np
+import requests
+from io import BytesIO
+# services/openai_service.py
+import openai
+from django.conf import settings
+
 
 
 
@@ -155,6 +161,119 @@ class CourseUploadPdfSaveAPI(APIView):
 
 
 
+# class QuestionPaperUploadSaveAPI(APIView):
+#     def post(self, request, id=None):
+#         print(request.data)
+        
+#         try:
+#             question_pdf = request.FILES.get("question_paper_pdf")
+#             class_id = request.data.get('class_selected')
+#             subject_id = request.data.get('subject_selected')
+#             section_id = request.data.get('section_selected')
+#             organization_id = request.data.get('organization')
+#             exam_id = request.data.get('exam_id')
+#             user_id = request.headers.get('userId')
+
+#             print(exam_id)
+            
+#             if not user_id:
+#                 return Response({"message": "User ID is required."}, status=400)
+            
+#             user_collection = get_collection('auth_users')
+#             user = user_collection.find_one({"_id": ObjectId(user_id)})
+#             if not user:
+#                 return Response({"message": "User not found."}, status=404)
+            
+#             if not exam_id:
+#                 return Response({"message": "Exam ID must be selected"}, status=400)
+            
+#             if not class_id or not subject_id or not section_id:
+#                 return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
+            
+#             if not question_pdf:
+#                 return Response({"message": "PDF file must be uploaded."}, status=400)
+            
+#             if not question_pdf.name.endswith('.pdf'):
+#                 return Response({"message": "Only PDF files are allowed."}, status=400)
+
+          
+#             try:
+#                 upload_result = cloudinary.uploader.upload(question_pdf, resource_type="raw")
+#                 print(upload_result)
+#                 pdf_file_url = upload_result.get("secure_url")
+#             except Exception as e:
+#                 return Response({"message": "Failed to upload PDF to Cloudinary."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+
+#             try:
+#                 organization_collection = get_collection("organization_db")
+#                 organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
+#                 if not organization_name:
+#                     return Response({"message": "Invalid organization ID or Not Found"}, status=400)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error1"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 classes_collection = get_collection("classes")
+#                 class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
+#                 if not class_name:
+#                     return Response({"message": "Invalid class ID"}, status=400)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error2"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 sections_collection = get_collection("sections")
+#                 section_name = sections_collection.find_one({"_id": ObjectId(section_id)})['name']
+#                 if not section_name:
+#                     return Response({"message": "Invalid section ID"}, status=400)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 subjects_collection = get_collection("subjects")
+#                 subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)})['name']
+#                 if not subject_name:
+#                     return Response({"message": "Invalid subject ID"}, status=400)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+#             try:
+#                 examId_collection = get_collection("examId_db")
+#                 exam_id = examId_collection.find_one({"_id": exam_id})['_id']
+#                 exam_id = str(exam_id)
+#                 if not exam_id:
+#                     return Response({"message": "Invalid Exam ID"}, status=400)
+#             except Exception as e:
+#                 print(e)
+#                 return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+#             try:
+#                 examId_collection.update_one(
+#                     {"_id": exam_id},
+#                     {"$set": {"question_uploaded": True}}
+#                 )
+#             except Exception as e:
+#                 return Response({"message": "Failed to update examId_db."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+#             question_collection = get_collection("question_paper_db")
+#             question_collection.insert_one({
+#                 "class_id": class_id,
+#                 "subject": subject_id,
+#                 "section": section_id,
+#                 "question_file_url": pdf_file_url,  # Store the Cloudinary URL
+#                 "exam_id": exam_id,
+#                 "organization_id": organization_id,
+#                 "question_uploaded": True,
+#                 "process_qa":False
+#             })  
+
+#             return Response({
+#                 "message": "Question PDF uploaded successfully.",
+#                 "pdf_file_url": pdf_file_url
+#             }, status=200)
+#         except Exception as e:
+#             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
+
+
+
 class QuestionPaperUploadSaveAPI(APIView):
     def post(self, request, id=None):
         print(request.data)
@@ -198,6 +317,38 @@ class QuestionPaperUploadSaveAPI(APIView):
             except Exception as e:
                 return Response({"message": "Failed to upload PDF to Cloudinary."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
+            # Download the PDF file from Cloudinary
+            pdf_file_response = requests.get(pdf_file_url)
+            if pdf_file_response.status_code != 200:
+                return Response({"message": "Failed to download PDF file from Cloudinary."}, status=500)
+
+            pdf_file_path = '/tmp/temp_question_paper.pdf'
+            with open(pdf_file_path, 'wb') as f:
+                f.write(pdf_file_response.content)
+
+            try:
+                # Extract text from the PDF
+                extracted_text = extract_text_from_pdf(pdf_file_path)
+                print("Extracted Text:", extracted_text[:500])  # Printing a snippet of the extracted text
+            except Exception as e:
+                return Response({"message": f"Failed to extract text from PDF: {str(e)}"}, status=500)
+
+            try:
+                # Split questions from the extracted text
+                questions = split_questions_from_text(pdf_file_path)
+                print("Extracted Questions:", questions)
+            except Exception as e:
+                return Response({"message": f"Failed to extract questions from PDF: {str(e)}"}, status=500)
+
+            # Generate answers for each extracted question 
+            context = extracted_text 
+            answers = []
+            try:
+                for question in questions:
+                    answer = get_answer(question, context)
+                    answers.append({"question": question, "answer": answer})
+            except Exception as e:
+                return Response({"message": f"Failed to generate answers for questions: {str(e)}"}, status=500)
 
             try:
                 organization_collection = get_collection("organization_db")
@@ -255,13 +406,17 @@ class QuestionPaperUploadSaveAPI(APIView):
                 "exam_id": exam_id,
                 "organization_id": organization_id,
                 "question_uploaded": True,
-                "process_qa":False
+                "process_qa": False
             })  
 
+            # Returning a response with the extracted questions and their answers
             return Response({
                 "message": "Question PDF uploaded successfully.",
-                "pdf_file_url": pdf_file_url
+                "pdf_file_url": pdf_file_url,
+                "extracted_questions": questions,
+                "answers": answers
             }, status=200)
+
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
 
@@ -347,7 +502,6 @@ class AnswerUploadAPI(APIView):
                 return Response({"message": "Internal server error", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             
-
 # class ChapterUploadAPI(APIView):
 #     def post(self, request):
 #         try:

@@ -14,7 +14,7 @@ from datetime import timedelta
 from corsheaders.defaults import default_headers
 from pymongo import MongoClient
 # settings.py
-import environ
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -215,7 +215,14 @@ cloudinary.config(
     secure=True
 )
 
-env = environ.Env()
-environ.Env.read_env() 
-OPENAI_API_KEY = env('OPENAI_API_KEY') 
+# env = environ.Env()
+# environ.Env.read_env() 
+# # OPENAI_API_KEY = env('OPENAI_API_KEY') 
+# OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')    
 CLOUDINARY_URL='cloudinary://418452416951998:JEbJBI8538wjBYCgiwLU4rx4rHU@dl6rs6af4'
