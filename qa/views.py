@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import generics, status
 from authentication.db_wrapper import get_collection
 from bson import ObjectId
+from .utils import extract_text_from_pdf, split_questions_from_text, get_answer, display_results
 from sentence_transformers import util
 import ast 
 
