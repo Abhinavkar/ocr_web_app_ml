@@ -9,7 +9,6 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
 from pathlib import Path
 from datetime import timedelta
 from corsheaders.defaults import default_headers
@@ -213,4 +212,5 @@ cloudinary.config(
     api_secret = "JEbJBI8538wjBYCgiwLU4rx4rHU", 
     secure=True
 )
+OPENAI_API_KEY ='sk-proj-u2OrJMwfPwYvYGMjmIZST3BlbkFJgBAz6Fuwk5CUpvj6qF2W'
 CLOUDINARY_URL='cloudinary://418452416951998:JEbJBI8538wjBYCgiwLU4rx4rHU@dl6rs6af4'

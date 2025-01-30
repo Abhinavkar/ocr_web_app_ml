@@ -368,3 +368,4 @@ def get_stored_result(roll_no, exam_id, class_id, subject,section):
         # Handle potential database or other errors
         print(f"An error occurred while fetching the stored result: {e}")
         return None
+    

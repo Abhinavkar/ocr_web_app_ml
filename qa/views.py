@@ -19,7 +19,7 @@ from datetime import datetime
 import cloudinary
 import cloudinary.uploader
 from cloudinary.utils import cloudinary_url
-
+from django.conf import settings
 
 
 class ResultRetrieveAPI(APIView):
@@ -267,13 +267,10 @@ class AnswerUploadAPI(APIView):
     
     def post(self, request):
         try:
-            # Collections
             answers_db_collection = get_collection("answers_db")
             class_collection = get_collection("classes")
             section_collection = get_collection("sections")
             subject_collection = get_collection("subjects")
-
-            # Required fields
             roll_no = request.data.get('rollNo')
             exam_id = request.data.get('examId')
             class_id = request.data.get('classId')
@@ -282,7 +279,6 @@ class AnswerUploadAPI(APIView):
             answer_pdf = request.FILES.get('answer_pdf')
             organization = request.data.get('organizationId')
 
-            # Validate inputs
             if not roll_no:
                 return Response({"error": "Roll number is required"}, status=status.HTTP_400_BAD_REQUEST)
             if not exam_id:
@@ -295,16 +291,12 @@ class AnswerUploadAPI(APIView):
                 return Response({"error": "Section is required"}, status=status.HTTP_400_BAD_REQUEST)
             if not answer_pdf:
                 return Response({"error": "Answer PDF is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Save PDF file
             try:
                 upload_result = cloudinary.uploader.upload(answer_pdf, resource_type="raw")
                 pdf_file_url = upload_result.get("secure_url")
             except Exception as e:
                 print("Error uploading PDF to Cloudinary:", str(e))
                 return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            # Fetch class, section, and subject data
             try:
                 class_data = class_collection.find_one({"_id": ObjectId(class_id)})['name']
                 if not class_data:
@@ -319,8 +311,10 @@ class AnswerUploadAPI(APIView):
                 print("Error fetching metadata:", str(e))
                 return Response({"error": "Error fetching class/section/subject data", "details": str(e)},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            #CORE LOGIC 
+            
 
-            # Save to answers_db collection
+
             try:
                 answers_db_collection.insert_one({
                     "roll_no": roll_no,
