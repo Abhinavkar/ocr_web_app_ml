@@ -3,24 +3,20 @@ from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.decorators import login_required 
 from django.core.files.storage import FileSystemStorage
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated , IsAdminUser
 from rest_framework.response import Response
 from rest_framework import generics, status
 from authentication.db_wrapper import get_collection
 from bson import ObjectId
 from .utils import extract_text_from_pdf, split_questions_from_text, get_answer, display_results
-from sentence_transformers import util
-import ast 
+
 
 fs = FileSystemStorage() 
 from datetime import datetime
 import cloudinary
 import cloudinary.uploader
-from cloudinary.utils import cloudinary_url
 from transformers import BertTokenizer, BertModel
 import torch
 from PyPDF2 import PdfReader
-
 import numpy as np
 import requests
 from io import BytesIO
@@ -470,7 +466,17 @@ class AnswerUploadAPI(APIView):
                     print("Error fetching metadata:", str(e))
                     return Response({"error": "Error fetching class/section/subject data", "details": str(e)},
                                     status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                #CORE LOGIC 
+            try:
+                pdf_path = download_pdf(pdf_file_url)  # You would need to implement the download function
+                images = convert_from_path(pdf_path)
+                
+                # OCR processing for each page in the PDF
+                all_text = ""
+                for image in images:
+                    text = extract_text_from_image(image, prompt="Please extract the text from this image.")
+                    all_text += text + "\n"  # Aggregate text from all pages
+
+            except Exception as e : 
                 
 
 
