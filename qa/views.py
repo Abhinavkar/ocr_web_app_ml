@@ -21,8 +21,10 @@ import torch
 from PyPDF2 import PdfReader
 from .utils import extract_text_from_pdf, generate_response 
 from cloudinary.uploader import upload as cloudinary_upload
-
-
+from together import Together
+from .utils import extract_text_from_PDF, parse_questions_and_answers, evaluate_answers,compute_factual_accuracy,compute_xlmr_similarity,compute_clarity_and_length,extract_answers_from_pdf
+from dotenv import load_dotenv
+load_dotenv()
 
 
 class ResultRetrieveAPI(APIView):
@@ -472,7 +474,92 @@ class AnswerUploadAPI(APIView):
                     return Response({"error": "Error fetching class/section/subject data", "details": str(e)},
                                     status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 #CORE LOGIC 
-                
+                # step 1 
+                try:
+                    response = requests.get(pdf_file_url)
+                    response.raise_for_status()  
+                    pdf_path = os.path.join("/tmp", answer_pdf.name)  
+                    with open(pdf_path, 'wb') as f:
+                        f.write(response.content)
+                    
+                    # course
+                    # response = requests.get(course_pdf_url)
+                    # response.raise_for_status()  
+                    # course_pdf_path = os.path.join("/tmp", "course.pdf")  
+                    # with open(course_pdf_path, 'wb') as f:
+                    #     f.write(response.content)
+                    
+                                    
+                    # Extract text from PDF
+                    extracted_text = extract_answers_from_pdf(pdf_path)
+                    if not extracted_text:
+                        return Response({"error": "The extracted text from the PDF is empty. Please provide a valid PDF."}, 
+                                        status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    return Response({"error": f"Error extracting text from PDF: {str(e)}"}, 
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                # step 2
+                try:
+                    questions, user_answers = parse_questions_and_answers(extracted_text, extracted_text)
+                    if not questions or not user_answers:
+                        return Response({"error": "Failed to extract questions or answers from the provided text."}, 
+                                        status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    return Response({"error": f"Error parsing questions and answers: {str(e)}"}, 
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                # Initialize Together API client
+                api_key = os.getenv("TOGETHER_API_KEY")
+                if not api_key:
+                    raise ValueError("TOGETHER_API_KEY not found in environment variables")
+
+                client = Together(api_key=api_key)
+                # Evaluate answers
+                results = []
+                for i, question in enumerate(questions.values()):
+                    try:
+                        # Generate model-generated answer
+                        messages = [
+                            {"role": "user", "content": f"Given this chapter content, generate a detailed answer for the following question:\n{question}"}
+                        ]
+                        completion = client.chat.completions.create(
+                            model="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+                            messages=messages,
+                        )
+                        model_generated_answer = completion.choices[0].message.content.strip()
+
+                        # Evaluate user answer
+                        user_answer = user_answers[i].strip() if i < len(user_answers) else "No answer provided."
+                        print("User Answer:",user_answer)
+                        try:
+                            factual_score = compute_factual_accuracy(user_answer, model_generated_answer)
+                            semantic_score = compute_xlmr_similarity(user_answer, model_generated_answer)
+                            clarity_score = compute_clarity_and_length(user_answer)
+
+                            print(f"Factual Accuracy Score: {factual_score:.2f}%")
+                            print(f"Semantic Relevance Score: {semantic_score :.2f}%")
+                            print(f"Clarity & Length Score: {clarity_score:.2f}%")
+
+                            final_score = (semantic_score  * 0.7) + (factual_score * 0.2) + (clarity_score * 0.1)
+                            print(f"Final Evaluation Score for Answer {i + 1}: {final_score:.2f}/100")
+
+                        except Exception as e:
+                            return Response({"error": f"Error during evaluation for question {i + 1}: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+                        # Save evaluation result
+                        results.append({
+                            "question": question,
+                            "user_answer": user_answer,
+                            "model_generated_answer": model_generated_answer,
+                            "final_score": final_score
+                        })
+                    except Exception as e:
+                        return Response({"error": f"Error evaluating answer for question {i + 1}: {str(e)}"}, 
+                                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 
                 try:
