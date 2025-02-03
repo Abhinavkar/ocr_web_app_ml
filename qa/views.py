@@ -8,7 +8,7 @@ from rest_framework import generics, status
 from authentication.db_wrapper import get_collection
 from bson import ObjectId
 from .utils import extract_text_from_pdf, extract_answers_from_pdf, evaluate_answer, Together
-
+import re
 import requests
 import tempfile
 import os
@@ -28,26 +28,9 @@ from cloudinary.uploader import upload as cloudinary_upload
 class ResultRetrieveAPI(APIView):
     def get(self, request, object_id=None):
         org_id = request.headers.get('orgId')
-
-        results_collection = get_collection("answers_db")
-        
-
-        
-        if object_id:
-            try:
-                object_id = ObjectId(object_id)
-                print(f"Querying for ObjectId: {object_id}")
-                results = list(results_collection.find({"_id": object_id}))
-                # print(f"Query results: {results}")
-            except Exception as e:
-                return Response({"message": f"Invalid ObjectId: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            results = list(results_collection.find({}))
-            # print(f"Query results: {results}")
-        
-        for result in results:
-            result["_id"] = str(result["_id"])  # Convert ObjectId to string
-        
+        results_collection = get_collection("results_db")
+        results= results_collection.find({"organization_id": org_id})
+        print(results)
         return Response(results, status=status.HTTP_200_OK)
     
 
@@ -237,7 +220,7 @@ class QuestionPaperUploadSaveAPI(APIView):
                 course_pdf_url= course_collection.find_one({"exam_id":exam_id})["pdf_file_path"]
                 
             except Exception as e :
-                print(e)
+            
                 return Response({"message": "Failed to download course pdf "}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             try:
                 question_pdf = requests.get(pdf_file_url)
@@ -315,8 +298,7 @@ class AnswerUploadAPI(APIView):
         def post(self, request):
                 
                 try:
-                    print("Status module:", status.HTTP_100_CONTINUE)
-
+                 
                     answers_db_collection = get_collection("answers_db")
                     class_collection = get_collection("classes")
                     section_collection = get_collection("sections")
@@ -390,12 +372,31 @@ class AnswerUploadAPI(APIView):
 
                     except Exception as e:
                         return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+                    
+                    text = final_score
+
+                    pattern = r"Answer (\d+): (\d+)"
+                    matches = re.findall(pattern, text)
+                    scores_dict = {f"Answer {num}": int(score) for num, score in matches}
+                    print(scores_dict)
                     results.append({
                                 "question": questions,
                                 "user_answer": extracted_text,
                                 "model_generated_answer": model_answer,
-                                "final_score": final_score
+                                "final_score": final_score,
+                                "scores":scores_dict
                             })
+                    results_collection=get_collection('results_db')
+                    results_collection.insert_one({
+                        "results":results,
+                        "roll_no":roll_no,
+                        "organization_id":organization,
+                        "section_id":section,
+                        "subject_id":subject,
+                        "class_id":class_id,
+                        "exam_id":exam_id,
+                        "answer_pdf":pdf_file_url
+                    })
                     return Response(results, status=status.HTTP_200_OK)
                 except Exception as e:
                             return Response({"message": f"An error occurred: {str(e)}"}, status=500)

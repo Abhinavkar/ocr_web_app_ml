@@ -153,7 +153,7 @@ def generate_response(chapter_text, questions_text):
 
     # Get completion from Together AI
     completion = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-3B-Instruct-Turbo",
+        model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
         messages=messages,
     )
     print(messages)
@@ -190,10 +190,10 @@ def evaluate_answer(user_answer, model_answer):
     api_key = os.getenv("TOGETHER_API_KEY")
     client = get_together_client()
     messages = [
-        {"role": "user", "content": f"User Answer: {user_answer}\nModel Answer: {model_answer} Evaluate the answer according to the model answer and give us score to each answer out of 100 on the basis of factual correctness, relevance, and completeness. Scoring format is Answer 1: 80, Answer 2: 90, etc."}
+        {"role": "user", "content": f"User Answer: {user_answer}\n Model Answer: {model_answer} Evaluate the answer according to the model answer and give us score to each answer out of 100 on the basis of factual correctness, relevance, and completeness. Scoring format is Answer 1: 80, Answer 2: 90, etc."}
     ]
     completion = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-3B-Instruct-Turbo",
+        model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
         messages=messages,
     )
     print(messages)
