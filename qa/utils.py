@@ -2,10 +2,7 @@ import PyPDF2
 from together import Together
 from dotenv import load_dotenv
 import os
-<<<<<<< HEAD
 ##########################################################################
-=======
->>>>>>> 60f3390 (added evaluation)
 import re
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -17,16 +14,11 @@ import tempfile
 import pdfplumber
 import base64
 from authentication.db_wrapper import get_collection
-<<<<<<< HEAD
-=======
-from rest_framework import status
->>>>>>> 60f3390 (added evaluation)
 from PIL import Image 
 from django.conf import settings
 import cv2 
 import pytesseract
 from requests import Response
-<<<<<<< HEAD
 import together
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
@@ -34,8 +26,6 @@ from sentence_transformers import SentenceTransformer, util
 import textstat
 
 ##########################################################################
-=======
->>>>>>> 60f3390 (added evaluation)
 
 # Load XLM-RoBERTa tokenizer and model
 tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-base')
@@ -318,90 +308,7 @@ def extract_text_from_image(image_path, prompt):
     return extracted_text.strip()
 
 
-<<<<<<< HEAD
 ######################################################################################
-=======
-def extract_answers_from_image(image_path):
-    """
-    Extract answers from an image and index them.
-    """
-    ocr_prompt = "Analyze the given image to identify and extract all handwritten text. I want only the answer in the output. If there are multiple answers , index each distinct point sequentially."
-    extracted_text = extract_text_from_image(image_path, ocr_prompt)
-    answers = re.findall(r'\d+\.\s+(.*?)(?=\d+\.|$)', extracted_text, re.DOTALL)
-    indexed_answers = {f"Answer {i+1}": answer.replace('\n', ' ').strip() for i, answer in enumerate(answers)}
-    print(indexed_answers)
-    return indexed_answers
-def extract_questions_from_pdf(pdf_file_path):
-    """
-    Extract questions from a multi-page PDF and index them.
-    """
-    try:
-        # Step 1: Define output folder for PDF-to-image conversion
-        output_folder = os.path.join(
-            settings.MEDIA_ROOT,
-            "pdf_images",
-            os.path.splitext(os.path.basename(pdf_file_path))[0]
-        )
-        
-        # Step 2: Convert PDF to images
-        image_paths = convert_pdf_to_images(pdf_file_path, output_folder)
-        if not image_paths:
-            raise ValueError("PDF conversion to images failed or returned no images.")
-
-        # Step 3: Initialize a dictionary to store extracted questions
-        extracted_questions = {}
-        
-        # Step 4: Process each image and extract questions
-        for image_path in image_paths:
-            print(f"Processing image: {image_path}")
-            
-            # Extract questions from the image
-            questions = extract_questions_from_image(image_path)
-            
-            if not isinstance(questions, dict):
-                print(f"Invalid data format for image {image_path}: {questions}")
-                continue  # Skip to the next image
-            
-            # Add extracted questions to the dictionary
-            extracted_questions.update(questions)
-
-        # Step 5: Handle cases where no questions were found
-        if not extracted_questions:
-            raise ValueError("No valid questions found in the PDF.")
-        
-        print("Extracted Questions:", extracted_questions)
-        return extracted_questions
-    except Exception as e:
-        print(f"Error extracting questions from images: {e}")
-        # return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-# def extract_answers_from_pdf(pdf_file_path):
-#     """
-#     Extract answers from a multi-page PDF.
-#     """
-#     try:
-#         output_folder = os.path.join("answer_images", os.path.splitext(os.path.basename(pdf_file_path))[0])
-#         image_paths = convert_pdf_to_images(pdf_file_path, output_folder)
-        
-#         user_answers = {}
-#         answer_counter = 1  # Initialize answer counter for sequential numbering
-
-#         for image_path in image_paths:
-#             print(f"Processing image: {image_path}")
-#             extracted_answers = extract_answers_from_image(image_path)
-            
-#             # Update the answer keys to ensure sequential numbering
-#             for key, value in extracted_answers.items():
-#                 user_answers[f"Answer {answer_counter}"] = value
-#                 answer_counter += 1
-#         questions = extract_questions_from_image(image_paths)
-#         return questions, user_answers
-#     except Exception as e:
-#         return Response({"error": f"Error extracting answers from PDF: {str(e)}"}, 
-#                     status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-  
-    # return user_answers
-
->>>>>>> 60f3390 (added evaluation)
 def extract_answers_from_pdf(pdf_file_path):
     """
     Extract answers from a multi-page PDF.
@@ -410,53 +317,7 @@ def extract_answers_from_pdf(pdf_file_path):
     image_paths = convert_pdf_to_images(pdf_file_path, output_folder)
     
     user_answers = {}
-<<<<<<< HEAD
     answer_counter = 1
-=======
-    answer_counter = 1  # Initialize answer counter for sequential numbering
-
-    for image_path in image_paths:
-        print(f"Processing image: {image_path}")
-        extracted_answers = extract_answers_from_image(image_path)
-        
-        # Update the answer keys to ensure sequential numbering
-        for key, value in extracted_answers.items():
-            user_answers[f"Answer {answer_counter}"] = value
-            answer_counter += 1
-  
-    # Convert the dictionary values to a single string
-    answers_text = "\n".join(user_answers.values())
-    questions_text = ""  # Assuming questions_text is empty or obtained elsewhere
-
-    questions, answers = parse_questions_and_answers(questions_text, answers_text)
-    return questions, answers
-
-def parse_questions_and_answers(questions_text, answers_text):
-    questions = []
-    answers = []
-
-    try:
-        if not questions_text.strip():
-            raise ValueError("Extracted questions text is empty.")
-        if not answers_text.strip():
-            raise ValueError("Extracted answers text is empty.")
-
-        question_pattern = re.compile(r"(\d+\.)(.*?)(?=\d+\.|\Z)", re.DOTALL | re.MULTILINE)
-        question_matches = question_pattern.findall(questions_text)
-        questions = [match[1].strip() for match in question_matches]
-
-        answer_pattern = re.compile(r"(\d+\.)(.*?)(?=\d+\.|\Z)", re.DOTALL | re.MULTILINE)
-        answer_matches = answer_pattern.findall(answers_text)
-        answers = [match[1].strip() for match in answer_matches]
-
-    except Exception as e:
-        print(f"Error while parsing questions and answers: {e}")
-
-    print(f"Questions: {questions}")
-    print(f"Answers: {answers}")
-
-    return questions, answers
->>>>>>> 60f3390 (added evaluation)
 
     for image_path in image_paths:
         print(f"Processing image: {image_path}")
