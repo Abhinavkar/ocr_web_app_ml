@@ -27,13 +27,22 @@ from cloudinary.uploader import upload as cloudinary_upload
 
 class ResultRetrieveAPI(APIView):
     def get(self, request, object_id=None):
-        org_id = request.headers.get('orgId')
+        organization_id = request.headers.get('organizationId')
+        if not organization_id:
+            return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
         results_collection = get_collection("results_db")
-        results= results_collection.find({"organization_id": org_id})
-        print(results)
+        results_cursor = results_collection.find({"organization_id": organization_id})
+        
+        results = []
+        for result in results_cursor:
+            result["_id"] = str(result["_id"])  # Convert ObjectId to string
+            results.append(result)
+        
         return Response(results, status=status.HTTP_200_OK)
     
-
+    
+    
 class CourseUploadPdfSaveAPI(APIView):
     def post(self, request):     
         try:
