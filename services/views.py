@@ -636,8 +636,6 @@ class DetailsAllAPI(APIView):
         
 
         
-        
-           
 class GeneratedExamIdAPI(APIView):
     def get(self, request):
         user_id = request.headers.get('userId')
@@ -654,13 +652,28 @@ class GeneratedExamIdAPI(APIView):
             exam_id_collection = get_collection("examId_db")
             exam_ids = list(exam_id_collection.find({"user_id": user_id}))
 
+            class_collection = get_collection("classes")
+            section_collection = get_collection("sections")
+            subject_collection = get_collection("subjects")
+
             for exam_id in exam_ids:
                 exam_id["_id"] = str(exam_id["_id"])
+                
+                class_id = exam_id.get("class_id")
+                section_id = exam_id.get("section_id")
+                subject_id = exam_id.get("subject_id")
+
+                class_name = class_collection.find_one({"_id": ObjectId(class_id)}).get("name")
+                section_name = section_collection.find_one({"_id": ObjectId(section_id)}).get("name")
+                subject_name = subject_collection.find_one({"_id": ObjectId(subject_id)}).get("name")
+
+                exam_id["class_name"] = class_name
+                exam_id["section_name"] = section_name
+                exam_id["subject_name"] = subject_name
 
             return Response({"exam_ids": exam_ids}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
     def put(self, request):
         user_id = request.headers.get('userId')
