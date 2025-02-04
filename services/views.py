@@ -432,87 +432,87 @@ class SubjectGetById(APIView):
                 cls["_id"] = str(cls["_id"])  # Convert ObjectId to string
             return Response(classes, status=status.HTTP_200_OK)
 
-class DocumentListAPI(APIView):
-    def get(self, request):
-        try:
+# class DocumentListAPI(APIView):
+#     def get(self, request):
+#         try:
            
-            user_id = request.headers.get("userId")
-            if not user_id:
-                return Response(
-                    {"message": "User ID is required in the request header"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+#             user_id = request.headers.get("userId")
+#             if not user_id:
+#                 return Response(
+#                     {"message": "User ID is required in the request header"},
+#                     status=status.HTTP_400_BAD_REQUEST,
+                # )
 
-            question_db_collection = get_collection('question_db')
-            pdf_books_collection = get_collection('pdf_books')
-            auth_users_collection = get_collection('auth_users')
+#             question_db_collection = get_collection('question_db')
+#             pdf_books_collection = get_collection('pdf_books')
+#             auth_users_collection = get_collection('auth_users')
 
             
-            user = auth_users_collection.find_one({"_id": ObjectId(user_id)})
-            if not user:
-                return Response(
-                    {"message": "Invalid user ID or user not found"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+#             user = auth_users_collection.find_one({"_id": ObjectId(user_id)})
+#             if not user:
+#                 return Response(
+#                     {"message": "Invalid user ID or user not found"},
+#                     status=status.HTTP_404_NOT_FOUND,
+#                 )
 
-            data = {}
+#             data = {}
 
            
-            try:
-                questions = question_db_collection.find({}, {
-                    "class_selected": 1,
-                    "subject_selected": 1,
-                    "question_file_path": 1,
-                })
-                data["questions"] = [
-                    {
-                        "class_selected": question.get("class_selected"),
-                        "subject_selected": question.get("subject_selected"),
-                        "question_file_path": question.get("question_file_path"),
-                    }
-                    for question in questions
-                ]
-            except Exception as e:
-                data["questions_error"] = str(e)
+#             try:
+#                 questions = question_db_collection.find({}, {
+#                     "class_selected": 1,
+#                     "subject_selected": 1,
+#                     "question_file_path": 1,
+#                 })
+#                 data["questions"] = [
+#                     {
+#                         "class_selected": question.get("class_selected"),
+#                         "subject_selected": question.get("subject_selected"),
+#                         "question_file_path": question.get("question_file_path"),
+#                     }
+#                     for question in questions
+#                 ]
+#             except Exception as e:
+#                 data["questions_error"] = str(e)
 
             
-            try:
-                pdf_books = pdf_books_collection.find({}, {
-                    "subject": 1,
-                    "section": 1,
-                    "pdf_file_path": 1,
-                })
-                data["pdf_books"] = [
-                    {
-                        "section": pdf_book.get("section"),
-                        "subject": pdf_book.get("subject"),
-                        "pdf_file_path": pdf_book.get("pdf_file_path"),
-                    }
-                    for pdf_book in pdf_books
-                ]
-            except Exception as e:
-                data["pdf_books_error"] = str(e)
+#             try:
+#                 pdf_books = pdf_books_collection.find({}, {
+#                     "subject": 1,
+#                     "section": 1,
+#                     "pdf_file_path": 1,
+#                 })
+#                 data["pdf_books"] = [
+#                     {
+#                         "section": pdf_book.get("section"),
+#                         "subject": pdf_book.get("subject"),
+#                         "pdf_file_path": pdf_book.get("pdf_file_path"),
+#                     }
+#                     for pdf_book in pdf_books
+#                 ]
+#             except Exception as e:
+#                 data["pdf_books_error"] = str(e)
 
             
-            try:
-                users = auth_users_collection.find({}, {"_id": 1, "organization": 1})
-                data["user_data"] = [
-                    {
-                        "user_id": str(user["_id"]),
-                        "organization_id": str(user.get("organization", "N/A")),  # Handle missing organization_id
-                    }
-                    for user in users
-                ]
-            except Exception as e:
-                data["user_data_error"] = str(e)
+#             try:
+#                 users = auth_users_collection.find({}, {"_id": 1, "organization": 1})
+#                 data["user_data"] = [
+#                     {
+#                         "user_id": str(user["_id"]),
+#                         "organization_id": str(user.get("organization", "N/A")),  # Handle missing organization_id
+#                     }
+#                     for user in users
+#                 ]
+#             except Exception as e:
+#                 data["user_data_error"] = str(e)
 
-            return Response(data, status=status.HTTP_200_OK)
+#             return Response(data, status=status.HTTP_200_OK)
 
-        except Exception as e:
-            return Response(
-                {"message": "An unexpected error occurred while fetching data", "error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+#         except Exception as e:
+#             return Response(
+#                 {"message": "An unexpected error occurred while fetching data", "error": str(e)},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             )
             
    
 class ExamIdById(APIView):
@@ -767,3 +767,61 @@ class ListOfDetailsUploadedAPI(APIView):
             }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # document list api
+class DocumentListAPI(APIView):
+    def get(self, request):
+        try:
+            organization_id = request.headers.get("organizationId")
+          
+            if not organization_id:
+                return Response(
+                    {"message": "Organization ID is required in the request header"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            course_pdf_collection = get_collection('course_pdf')
+            question_paper_collection = get_collection('question_paper_db')
+            classes_collection = get_collection('classes')
+            sections_collection = get_collection('sections')
+            subjects_collection = get_collection('subjects')
+
+            data = {}
+            try:
+                course_pdfs = course_pdf_collection.find({"organization_id": organization_id})
+                data["course_pdfs"] = [
+                    {
+                        "class_name": classes_collection.find_one({"_id": ObjectId(course_pdf.get("class_id"))}).get("name"),
+                        "subject_name": subjects_collection.find_one({"_id": ObjectId(course_pdf.get("subject"))}).get("name"),
+                        "section_name": sections_collection.find_one({"_id": ObjectId(course_pdf.get("section"))}).get("name"),
+                        "pdf_file_url": course_pdf.get("pdf_file_path"),
+                        "organization_id": organization_id
+                    }
+                    for course_pdf in course_pdfs
+                ]
+            except Exception as e:
+                data["course_pdfs_error"] = str(e)
+                
+            try:
+                question_papers = question_paper_collection.find({"organization_id": organization_id})
+                data["question_papers"] = [
+                    {
+                        "class_name": classes_collection.find_one({"_id": ObjectId(question_paper.get("class_id"))}).get("name"),
+                        "subject_name": subjects_collection.find_one({"_id": ObjectId(question_paper.get("subject"))}).get("name"),
+                        "section_name": sections_collection.find_one({"_id": ObjectId(question_paper.get("section"))}).get("name"),
+                        "pdf_file_url": question_paper.get("question_file_url"),
+                        "organization_id": organization_id
+                    }
+                    for question_paper in question_papers
+                ]
+            except Exception as e:
+                data["question_papers_error"] = str(e)
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        
+        except Exception as e:
+            return Response(
+                {"message": "An unexpected error occurred while fetching data", "error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

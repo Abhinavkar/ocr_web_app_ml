@@ -21,8 +21,10 @@ import torch
 from PyPDF2 import PdfReader
 from .utils import extract_text_from_pdf, generate_response 
 from cloudinary.uploader import upload as cloudinary_upload
-
-
+from together import Together
+from .utils import extract_text_from_PDF, evaluate_answers,compute_factual_accuracy,compute_xlmr_similarity,compute_clarity_and_length,extract_answers_from_pdf
+from dotenv import load_dotenv
+load_dotenv()
 
 
 class ResultRetrieveAPI(APIView):
