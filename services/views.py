@@ -441,7 +441,7 @@ class SubjectGetById(APIView):
 #                 return Response(
 #                     {"message": "User ID is required in the request header"},
 #                     status=status.HTTP_400_BAD_REQUEST,
-#                 )
+                # )
 
 #             question_db_collection = get_collection('question_db')
 #             pdf_books_collection = get_collection('pdf_books')
@@ -769,121 +769,24 @@ class ListOfDetailsUploadedAPI(APIView):
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # document list api
-# class DocumentListAPI(APIView):
-#     def get(self, request):
-#         try:
-#             user_id = request.headers.get("userId")
-#             organization_id = request.headers.get("organizationId")
-#             if not user_id:
-#                 return Response(
-#                     {"message": "User ID is required in the request header"},
-#                     status=status.HTTP_400_BAD_REQUEST,
-#                 )
-#             if not organization_id:
-#                 return Response(
-#                     {"message": "Organization ID is required in the request header"},
-#                     status=status.HTTP_400_BAD_REQUEST,
-#                 )
-
-#             course_pdf_collection = get_collection('course_pdf')
-#             question_paper_collection = get_collection('question_paper_db')
-#             classes_collection = get_collection('classes')
-#             sections_collection = get_collection('sections')
-#             subjects_collection = get_collection('subjects')
-
-#             data = {}
-#             try:
-#                 course_pdfs = course_pdf_collection.find({"organization_id": organization_id, "user_id": user_id})
-#                 data["course_pdfs"] = [
-#                     {
-#                         "class_name": classes_collection.find_one({"_id": ObjectId(course_pdf.get("class_id"))}).get("name"),
-#                         "subject_name": subjects_collection.find_one({"_id": ObjectId(course_pdf.get("subject"))}).get("name"),
-#                         "section_name": sections_collection.find_one({"_id": ObjectId(course_pdf.get("section"))}).get("name"),
-#                         "pdf_file_url": course_pdf.get("pdf_file_path"),
-#                         "user_id": user_id,
-#                         "organization_id": organization_id
-#                     }
-#                     for course_pdf in course_pdfs
-#                 ]
-#             except Exception as e:
-#                 data["course_pdfs_error"] = str(e)
-                
-#             try:
-#                 question_papers = question_paper_collection.find({"organization_id": organization_id, "user_id": user_id})
-#                 data["question_papers"] = [
-#                     {
-#                         "class_name": classes_collection.find_one({"_id": ObjectId(question_paper.get("class_id"))}).get("name"),
-#                         "subject_name": subjects_collection.find_one({"_id": ObjectId(question_paper.get("subject"))}).get("name"),
-#                         "section_name": sections_collection.find_one({"_id": ObjectId(question_paper.get("section"))}).get("name"),
-#                         "pdf_file_url": question_paper.get("question_file_url"),
-#                         "user_id": user_id,
-#                         "organization_id": organization_id
-#                     }
-#                     for question_paper in question_papers
-#                 ]
-#             except Exception as e:
-#                 data["question_papers_error"] = str(e)
-
-#             return Response(data, status=status.HTTP_200_OK)
-
-        
-#         except Exception as e:
-#             return Response(
-#                 {"message": "An unexpected error occurred while fetching data", "error": str(e)},
-#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             )
-
-
 class DocumentListAPI(APIView):
     def get(self, request):
         try:
-            exam_id = request.headers.get("examId")
             organization_id = request.headers.get("organizationId")
-            if not exam_id:
-                return Response(
-                    {"message": "Exam ID is required in the request header"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+          
             if not organization_id:
                 return Response(
                     {"message": "Organization ID is required in the request header"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            try:
-                exam_id_collection = get_collection('examId_db')
-                exam_record = exam_id_collection.find_one({"_id": exam_id})
-                if not exam_record:
-                    return Response(
-                        {"message": "Invalid exam ID or exam record not found"},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-            except Exception as e:
-                 return Response(
-                        {"message": "Invalid exam ID or exam record not found"},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-                
 
-            user_id = exam_record.get("user_id")
-            if not user_id:
-                return Response(
-                    {"message": "User ID not found in the exam record"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+            course_pdf_collection = get_collection('course_pdf')
+            question_paper_collection = get_collection('question_paper_db')
+            classes_collection = get_collection('classes')
+            sections_collection = get_collection('sections')
+            subjects_collection = get_collection('subjects')
 
-            try:
-                course_pdf_collection = get_collection('course_pdf')
-                question_paper_collection = get_collection('question_paper_db')
-                classes_collection = get_collection('classes')
-                sections_collection = get_collection('sections')
-                subjects_collection = get_collection('subjects')
-            except Exception as e:
-                return Response(
-                    {"message": "Error fetching collections", "error": str(e)},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
             data = {}
-
             try:
                 course_pdfs = course_pdf_collection.find({"organization_id": organization_id})
                 data["course_pdfs"] = [
@@ -892,17 +795,13 @@ class DocumentListAPI(APIView):
                         "subject_name": subjects_collection.find_one({"_id": ObjectId(course_pdf.get("subject"))}).get("name"),
                         "section_name": sections_collection.find_one({"_id": ObjectId(course_pdf.get("section"))}).get("name"),
                         "pdf_file_url": course_pdf.get("pdf_file_path"),
-                        "organization_id": organization_id,
-                        "question_uploaded": exam_record.get("question_uploaded", False),
-                        "is_active": exam_record.get("is_active", False),
-                    
-                        
+                        "organization_id": organization_id
                     }
                     for course_pdf in course_pdfs
                 ]
             except Exception as e:
                 data["course_pdfs_error"] = str(e)
-
+                
             try:
                 question_papers = question_paper_collection.find({"organization_id": organization_id})
                 data["question_papers"] = [
@@ -911,26 +810,16 @@ class DocumentListAPI(APIView):
                         "subject_name": subjects_collection.find_one({"_id": ObjectId(question_paper.get("subject"))}).get("name"),
                         "section_name": sections_collection.find_one({"_id": ObjectId(question_paper.get("section"))}).get("name"),
                         "pdf_file_url": question_paper.get("question_file_url"),
-                        "organization_id": organization_id,
-                        
-                        "course_uploaded":exam_record.get("course_uploaded" ,False),
-                        "is_active": exam_record.get("is_active", False),
-                        
+                        "organization_id": organization_id
                     }
                     for question_paper in question_papers
                 ]
-                if not  question_papers:
-                    data["question_papers"] = "Question paper is not uploaded by the org/user"
-                # else:
-                #      data["question_papers"] = "Question paper is not uploaded by the org/user"
-
             except Exception as e:
                 data["question_papers_error"] = str(e)
-            # if not data.get("question_papers"):
-            #     data["question_papers"] = "Question paper is not uploaded by the org/user"
 
             return Response(data, status=status.HTTP_200_OK)
 
+        
         except Exception as e:
             return Response(
                 {"message": "An unexpected error occurred while fetching data", "error": str(e)},
