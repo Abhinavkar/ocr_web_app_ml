@@ -20,7 +20,29 @@ from transformers import BertTokenizer, BertModel
 import torch
 from PyPDF2 import PdfReader
 from .utils import extract_text_from_pdf, generate_response 
+import json 
 from cloudinary.uploader import upload as cloudinary_upload
+from together import Together
+from .utils import extract_text_from_PDF, evaluate_answers,compute_factual_accuracy,compute_xlmr_similarity,compute_clarity_and_length,extract_answers_from_pdf
+from dotenv import load_dotenv
+load_dotenv()
+
+
+# class ResultRetrieveAPI(APIView):
+#     def get(self, request, object_id=None):
+#         organization_id = request.headers.get('organizationId')
+#         if not organization_id:
+#             return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+#         results_collection = get_collection("results_db")
+#         results_cursor = results_collection.find({"organization_id": organization_id})        
+        
+#         all_results = []  
+#         for result in results_cursor:
+#             all_results.extend(result.get("results", []))  
+#         json_results = json.dumps(all_results, check_circular=False)
+        
+#         return Response(json_results, status=status.HTTP_200_OK)
 
 
 
@@ -40,9 +62,14 @@ class ResultRetrieveAPI(APIView):
               # Convert ObjectId to string
             results.append(result)
         
-        return Response(results, status=status.HTTP_200_OK)
+        response_data = {
+            "results": results
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
     
     
+
     
 class CourseUploadPdfSaveAPI(APIView):
     def post(self, request):     
