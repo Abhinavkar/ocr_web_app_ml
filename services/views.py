@@ -782,57 +782,138 @@ class ListOfDetailsUploadedAPI(APIView):
             return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # document list api
+# class DocumentListAPI(APIView):
+#     def get(self, request):
+#         try:
+#             organization_id = request.headers.get("organizationId")
+          
+#             if not organization_id:
+#                 return Response(
+#                     {"message": "Organization ID is required in the request header"},
+#                     status=status.HTTP_400_BAD_REQUEST,
+#                 )
+
+#             course_pdf_collection = get_collection('course_pdf')
+#             question_paper_collection = get_collection('question_paper_db')
+#             classes_collection = get_collection('classes')
+#             sections_collection = get_collection('sections')
+#             subjects_collection = get_collection('subjects')
+            
+#             data = {}
+#             try:
+#                 course_pdfs = course_pdf_collection.find({"organization_id": organization_id})
+#                 data["course_pdfs"] = [
+#                     {
+#                         "class_name": classes_collection.find_one({"_id": ObjectId(course_pdf.get("class_id"))}).get("name"),
+#                         "subject_name": subjects_collection.find_one({"_id": ObjectId(course_pdf.get("subject"))}).get("name"),
+#                         "section_name": sections_collection.find_one({"_id": ObjectId(course_pdf.get("section"))}).get("name"),
+#                         "pdf_file_url": course_pdf.get("pdf_file_path"),
+#                         "organization_id": organization_id
+#                     }
+#                     for course_pdf in course_pdfs
+#                 ]
+#             except Exception as e:
+#                 data["course_pdfs_error"] = str(e)
+                
+#             try:
+#                 question_papers = question_paper_collection.find({"organization_id": organization_id})
+#                 data["question_papers"] = [
+#                     {
+#                         "class_name": classes_collection.find_one({"_id": ObjectId(question_paper.get("class_id"))}).get("name"),
+#                         "subject_name": subjects_collection.find_one({"_id": ObjectId(question_paper.get("subject"))}).get("name"),
+#                         "section_name": sections_collection.find_one({"_id": ObjectId(question_paper.get("section"))}).get("name"),
+#                         "pdf_file_url": question_paper.get("question_file_url"),
+#                         "organization_id": organization_id
+#                     }
+#                     for question_paper in question_papers
+#                 ]
+#             except Exception as e:
+#                 data["question_papers_error"] = str(e)
+
+#             return Response(data, status=status.HTTP_200_OK)
+
+        
+#         except Exception as e:
+#             return Response(
+#                 {"message": "An unexpected error occurred while fetching data", "error": str(e)},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             )
+
+
 class DocumentListAPI(APIView):
     def get(self, request):
         try:
             organization_id = request.headers.get("organizationId")
-          
             if not organization_id:
                 return Response(
                     {"message": "Organization ID is required in the request header"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # Fetch collections
             course_pdf_collection = get_collection('course_pdf')
             question_paper_collection = get_collection('question_paper_db')
             classes_collection = get_collection('classes')
             sections_collection = get_collection('sections')
             subjects_collection = get_collection('subjects')
 
-            data = {}
-            try:
-                course_pdfs = course_pdf_collection.find({"organization_id": organization_id})
-                data["course_pdfs"] = [
-                    {
-                        "class_name": classes_collection.find_one({"_id": ObjectId(course_pdf.get("class_id"))}).get("name"),
-                        "subject_name": subjects_collection.find_one({"_id": ObjectId(course_pdf.get("subject"))}).get("name"),
-                        "section_name": sections_collection.find_one({"_id": ObjectId(course_pdf.get("section"))}).get("name"),
-                        "pdf_file_url": course_pdf.get("pdf_file_path"),
-                        "organization_id": organization_id
-                    }
-                    for course_pdf in course_pdfs
-                ]
-            except Exception as e:
-                data["course_pdfs_error"] = str(e)
-                
-            try:
-                question_papers = question_paper_collection.find({"organization_id": organization_id})
-                data["question_papers"] = [
-                    {
-                        "class_name": classes_collection.find_one({"_id": ObjectId(question_paper.get("class_id"))}).get("name"),
-                        "subject_name": subjects_collection.find_one({"_id": ObjectId(question_paper.get("subject"))}).get("name"),
-                        "section_name": sections_collection.find_one({"_id": ObjectId(question_paper.get("section"))}).get("name"),
-                        "pdf_file_url": question_paper.get("question_file_url"),
-                        "organization_id": organization_id
-                    }
-                    for question_paper in question_papers
-                ]
-            except Exception as e:
-                data["question_papers_error"] = str(e)
+            # Fetch all course PDFs and question papers
+            course_pdfs = list(course_pdf_collection.find({"organization_id": organization_id}))
+            question_papers = list(question_paper_collection.find({"organization_id": organization_id}))
 
-            return Response(data, status=status.HTTP_200_OK)
+            # Dictionary to group data by (class_id, subject_id, section_id)
+            grouped_data = {}
 
-        
+            # Process Course PDFs
+            for course_pdf in course_pdfs:
+                class_id = course_pdf.get("class_id")
+                subject_id = course_pdf.get("subject")
+                section_id = course_pdf.get("section")
+
+                # Fetch class, subject, and section names directly
+                class_name = classes_collection.find_one({"_id": ObjectId(class_id)}).get("name", "Unknown Class")
+                subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)}).get("name", "Unknown Subject")
+                section_name = sections_collection.find_one({"_id": ObjectId(section_id)}).get("name", "Unknown Section")
+
+                key = (class_id, subject_id, section_id)
+                grouped_data[key] = {
+                    "class_name": class_name,
+                    "subject_name": subject_name,
+                    "section_name": section_name,
+                    "course_pdf_url": course_pdf.get("pdf_file_path"),
+                    "question_pdf_url": None  # Initialize as None
+                }
+
+            # Process Question Papers
+            for question_paper in question_papers:
+                class_id = question_paper.get("class_id")
+                subject_id = question_paper.get("subject")
+                section_id = question_paper.get("section")
+
+                # Fetch class, subject, and section names directly
+                class_name = classes_collection.find_one({"_id": ObjectId(class_id)}).get("name", "Unknown Class")
+                subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)}).get("name", "Unknown Subject")
+                section_name = sections_collection.find_one({"_id": ObjectId(section_id)}).get("name", "Unknown Section")
+
+                key = (class_id, subject_id, section_id)
+                if key in grouped_data:
+                    # Update existing entry with question PDF URL
+                    grouped_data[key]["question_pdf_url"] = question_paper.get("question_file_url")
+                else:
+                    # Create new entry if no course PDF exists
+                    grouped_data[key] = {
+                        "class_name": class_name,
+                        "subject_name": subject_name,
+                        "section_name": section_name,
+                        "course_pdf_url": None,
+                        "question_pdf_url": question_paper.get("question_file_url")
+                    }
+
+            # Convert grouped data to a list for the response
+            response_data = list(grouped_data.values())
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
         except Exception as e:
             return Response(
                 {"message": "An unexpected error occurred while fetching data", "error": str(e)},
