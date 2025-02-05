@@ -28,25 +28,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# class ResultRetrieveAPI(APIView):
-#     def get(self, request, object_id=None):
-#         organization_id = request.headers.get('organizationId')
-#         if not organization_id:
-#             return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-#         results_collection = get_collection("results_db")
-#         results_cursor = results_collection.find({"organization_id": organization_id})        
-        
-#         all_results = []  
-#         for result in results_cursor:
-#             all_results.extend(result.get("results", []))  
-#         json_results = json.dumps(all_results, check_circular=False)
-        
-#         return Response(json_results, status=status.HTTP_200_OK)
-
-
-
-
 class ResultRetrieveAPI(APIView):
     def get(self, request, object_id=None):
         organization_id = request.headers.get('organizationId')
@@ -54,18 +35,37 @@ class ResultRetrieveAPI(APIView):
             return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
         
         results_collection = get_collection("results_db")
-        results_cursor = results_collection.find({"organization_id": organization_id})
+        results_cursor = results_collection.find({"organization_id": organization_id})        
         
-        results = []
+        all_results = []  
         for result in results_cursor:
-            result["_id"] = str(result["_id"])  # Convert ObjectId to string
-            results.append(result)
+            all_results.extend(result.get("results", []))  
+        json_results = json.dumps(all_results, check_circular=False)
         
-        response_data = {
-            "results": results
-        }
+        return Response(json_results, status=status.HTTP_200_OK)
+
+
+
+
+# class ResultRetrieveAPI(APIView):
+#     def get(self, request, object_id=None):
+#         organization_id = request.headers.get('organizationId')
+#         if not organization_id:
+#             return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
         
-        return Response(response_data, status=status.HTTP_200_OK)
+#         results_collection = get_collection("results_db")
+#         results_cursor = results_collection.find({"organization_id": organization_id})
+        
+#         results = []
+#         for result in results_cursor:
+#             result["_id"] = str(result["_id"])  # Convert ObjectId to string
+#             results.append(result)
+        
+#         response_data = {
+#             "results": results
+#         }
+        
+#         return Response(response_data, status=status.HTTP_200_OK)
     
     
 
