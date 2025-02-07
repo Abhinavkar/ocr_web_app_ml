@@ -40,7 +40,32 @@ class ResultRetrieveAPI(APIView):
         results = []
         for result in results_cursor:
             result["_id"] = str(result["_id"])  # Convert ObjectId to string
+            # results.append(result)
+            total_score = 0
+            question_count = 0
+            
+            try:
+                
+                if "results" in result:
+                    for res in result["results"]:
+                        if "scores" in res:
+                            for key, value in res["scores"].items():
+                                total_score += value 
+                        if "question" in res:
+                            
+                            question_count += len(re.findall(r'\d+\.', res["question"]))
+            except Exception as e:
+                print(f"Error processing result: {result['_id']}, error: {str(e)}")
+            
+            print(f"Total score: {total_score}, Question count: {question_count}")
+            
+            
+            average_score = total_score / question_count if question_count > 0 else 0
+            result["total_score"] = total_score
+            result["average_score"] = average_score
+            
             results.append(result)
+            
         
         response_data = {
             "results": results
