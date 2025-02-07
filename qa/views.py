@@ -28,25 +28,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# class ResultRetrieveAPI(APIView):
-#     def get(self, request, object_id=None):
-#         organization_id = request.headers.get('organizationId')
-#         if not organization_id:
-#             return Response({"message": "Organization ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-#         results_collection = get_collection("results_db")
-#         results_cursor = results_collection.find({"organization_id": organization_id})        
-        
-#         all_results = []  
-#         for result in results_cursor:
-#             all_results.extend(result.get("results", []))  
-#         json_results = json.dumps(all_results, check_circular=False)
-        
-#         return Response(json_results, status=status.HTTP_200_OK)
-
-
-
-
 class ResultRetrieveAPI(APIView):
     def get(self, request, object_id=None):
         organization_id = request.headers.get('organizationId')
@@ -58,9 +39,33 @@ class ResultRetrieveAPI(APIView):
         
         results = []
         for result in results_cursor:
-            result["_id"] = str(result["_id"])
-              # Convert ObjectId to string
+            result["_id"] = str(result["_id"])  # Convert ObjectId to string
+            # results.append(result)
+            total_score = 0
+            question_count = 0
+            
+            try:
+                
+                if "results" in result:
+                    for res in result["results"]:
+                        if "scores" in res:
+                            for key, value in res["scores"].items():
+                                total_score += value 
+                        if "question" in res:
+                            
+                            question_count += len(re.findall(r'\d+\.', res["question"]))
+            except Exception as e:
+                print(f"Error processing result: {result['_id']}, error: {str(e)}")
+            
+            print(f"Total score: {total_score}, Question count: {question_count}")
+            
+            
+            average_score = total_score / question_count if question_count > 0 else 0
+            result["total_score"] = total_score
+            result["average_score"] = average_score
+            
             results.append(result)
+            
         
         response_data = {
             "results": results
