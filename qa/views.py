@@ -451,7 +451,10 @@ class AnswerUploadAPI(APIView):
                         "subject_id":subject,
                         "class_id":class_id,
                         "exam_id":exam_id,
-                        "answer_pdf":pdf_file_url
+                        "answer_pdf":pdf_file_url,
+                        "class_name":class_data,
+                        "section_name":section_data,
+                        "subject_name":subject_data,
                     })
                     return Response(results, status=status.HTTP_200_OK)
                 except Exception as e:
