@@ -12,4 +12,6 @@ urlpatterns = [
     
     path('upload/answers/', views.AnswerUploadAPI.as_view(), name="answer_upload"),
     
+    path('delete/results/<str:result_id>/', ResultRetrieveAPI.as_view(), name='result_delete'),
+    
     ]
