@@ -741,7 +741,7 @@ class GeneratedExamIdAPI(APIView):
             # Delete associated documents in question_paper_db collection
             question_paper_collection = get_collection("question_paper_db")
             question_paper_result = question_paper_collection.delete_many({"exam_id": exam_id})
-        
+            
             return Response({
                 "message": "Exam ID and associated documents deleted successfully.",
                 "course_pdf_deleted_count": course_pdf_result.deleted_count,

@@ -26,6 +26,9 @@ from together import Together
 from .utils import extract_text_from_PDF, evaluate_answers,compute_factual_accuracy,compute_xlmr_similarity,compute_clarity_and_length,extract_answers_from_pdf
 from dotenv import load_dotenv
 load_dotenv()
+import boto3
+from datetime import datetime
+from  django.conf import settings
 
 
 class ResultRetrieveAPI(APIView):
@@ -103,11 +106,29 @@ class CourseUploadPdfSaveAPI(APIView):
             if not pdf_file.name.endswith('.pdf'):
                 return Response({"message": "Only PDF files are allowed."}, status=400)
             try:
-                upload_result = cloudinary.uploader.upload(pdf_file, resource_type="raw")
-                pdf_file_url = upload_result.get("url")
+                # upload_result = cloudinary.uploader.upload(pdf_file, resource_type="raw")
+                # pdf_file_url = upload_result.get("url")
+              
+                s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                    region_name=os.getenv("AWS_S3_REGION_NAME")
+                )
+
+                file_key = f"CONTENT/{datetime.now().strftime('%Y%m%d%H%M%S')}_{pdf_file.name}"
+                print(file_key)
+                bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME")
+
+                # Upload PDF to S3
+                s3_client.upload_fileobj(pdf_file, bucket_name, file_key)
+                
+                pdf_file_url = f"https://{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.{os.getenv('AWS_S3_REGION_NAME')}.amazonaws.com/{file_key}"
+                print(pdf_file_url)
+
             except Exception as e:
-                print("Error uploading PDF to Cloudinary:", str(e))
-                return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                print("Error uploading PDF to AWS", str(e))
+                return Response({"message": "Internal Server Error while uploading PDF to AWS S3 "}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             try:
                 organization_collection = get_collection("organization_db")
