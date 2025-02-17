@@ -77,7 +77,21 @@ class ResultRetrieveAPI(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
     
     
-
+    def delete(self, request, result_id=None):
+        if not result_id:
+            return Response({"message": "Result ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        results_collection = get_collection("results_db")
+        try:
+            result = results_collection.find_one({"_id": ObjectId(result_id)})
+            if not result:
+                return Response({"message": "Result not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+            results_collection.delete_one({"_id": ObjectId(result_id)})
+            return Response({"message": "Result deleted successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"message": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
     
 class CourseUploadPdfSaveAPI(APIView):
     def post(self, request):     
