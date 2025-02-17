@@ -214,12 +214,8 @@ class CourseUploadPdfSaveAPI(APIView):
             return Response({"message": "Invalid upload type or missing file."}, status=400)    
 
 
-
-
-
 class QuestionPaperUploadSaveAPI(APIView):
     def post(self, request, id=None):
-        
         try:
             question_pdf = request.FILES.get("question_paper_pdf")
             class_id = request.data.get('class_selected')
@@ -228,145 +224,305 @@ class QuestionPaperUploadSaveAPI(APIView):
             organization_id = request.data.get('organization')
             exam_id = request.data.get('exam_id')
             user_id = request.headers.get('userId')
+
             if not user_id:
                 return Response({"message": "User ID is required."}, status=400)
-            
+
+            # Validate User Existence
             user_collection = get_collection('auth_users')
             user = user_collection.find_one({"_id": ObjectId(user_id)})
             if not user:
                 return Response({"message": "User not found."}, status=404)
-            
+
             if not exam_id:
                 return Response({"message": "Exam ID must be selected"}, status=400)
-            
+
             if not class_id or not subject_id or not section_id:
                 return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
-            
+
             if not question_pdf:
                 return Response({"message": "PDF file must be uploaded."}, status=400)
-            
+
             if not question_pdf.name.endswith('.pdf'):
                 return Response({"message": "Only PDF files are allowed."}, status=400)
+
+            # Validate Organization, Class, Section, and Subject
+            organization_collection = get_collection("organization_db")
+            organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
+            if not organization_name:
+                return Response({"message": "Invalid organization ID or Not Found"}, status=404)
+
+            classes_collection = get_collection("classes")
+            class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
+            if not class_name:
+                return Response({"message": "Invalid class ID"}, status=404)
+
+            sections_collection = get_collection("sections")
+            section_name = sections_collection.find_one({"_id": ObjectId(section_id)})['name']
+            if not section_name:
+                return Response({"message": "Invalid section ID"}, status=404)
+
+            subjects_collection = get_collection("subjects")
+            subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)})['name']
+            if not subject_name:
+                return Response({"message": "Invalid subject ID"}, status=404)
+
+            # Validate Exam ID
+            examId_collection = get_collection("examId_db")
+            exam_record = examId_collection.find_one({"_id": exam_id})
+            if not exam_record:
+                return Response({"message": "Invalid Exam ID"}, status=400)
+
+            # AWS S3 Upload Process
             try:
-                organization_collection = get_collection("organization_db")
-                organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
-                if not organization_name:
-                    return Response({"message": "Invalid organization ID or Not Found"}, status=404)
+                s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                    region_name=os.getenv("AWS_S3_REGION_NAME")
+                )
+
+                file_key = f"question_papers/{datetime.now().strftime('%Y%m%d%H%M%S')}_{question_pdf.name}"
+                bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME")
+
+                # Upload Question PDF to AWS S3
+                s3_client.upload_fileobj(question_pdf, bucket_name, file_key)
+
+                # Generate file URL
+                question_file_url = f"https://{bucket_name}.s3.{os.getenv('AWS_S3_REGION_NAME')}.amazonaws.com/{file_key}"
+
             except Exception as e:
-                return Response({"message": "Internal Server Error1"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"message": "Failed to upload PDF to AWS S3."}, status=500)
+
+            # Download course PDF from S3 (as done previously)
             try:
-                classes_collection = get_collection("classes")
-                class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
-                if not class_name:
-                    return Response({"message": "Invalid class ID"}, status=404)
+                course_collection = get_collection("course_pdf")
+                course_pdf_url = course_collection.find_one({"exam_id": exam_id})["pdf_file_path"]
+
+                # Retrieve PDFs
+                question_pdf_response = requests.get(question_file_url)
+                course_pdf_response = requests.get(course_pdf_url)
+
+                if question_pdf_response.status_code != 200:
+                    return Response({"message": "Failed to retrieve question paper from S3"}, status=500)
+
+                if course_pdf_response.status_code != 200:
+                    return Response({"message": "Failed to retrieve course PDF from S3"}, status=500)
+
             except Exception as e:
-                return Response({"message": "Internal Server Error2"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({"message": "Error retrieving PDFs."}, status=500)
+
+            # Extract text from the PDFs
             try:
-                sections_collection = get_collection("sections")
-                section_name = sections_collection.find_one({"_id": ObjectId(section_id)})['name']
-                if not section_name:
-                    return Response({"message": "Invalid section ID"}, status=404)
-            except Exception as e:
-                return Response({"message": "Internal Server Error3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try:
-                subjects_collection = get_collection("subjects")
-                subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)})['name']
-                if not subject_name:
-                    return Response({"message": "Invalid subject ID"}, status=404)
-            except Exception as e:
-                return Response({"message": "Internal Server Error4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            try:
-                examId_collection = get_collection("examId_db")
-                exam_id = examId_collection.find_one({"_id": exam_id})['_id']
-                exam_id = str(exam_id)
-                if not exam_id:
-                    return Response({"message": "Invalid Exam ID"}, status=400)
-            except Exception as e:
-                print(e)
-                return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
-            try:
-                upload_result = cloudinary.uploader.upload(question_pdf, resource_type="raw")
-              
-                pdf_file_url = upload_result.get("secure_url")
-            except Exception as e:
-                return Response({"message": "Failed to upload PDF to Cloudinary."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try:
-                course_collection= get_collection("course_pdf")
-                course_pdf_url= course_collection.find_one({"exam_id":exam_id})["pdf_file_path"]
-                
-            except Exception as e :
-            
-                return Response({"message": "Failed to download course pdf "}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try:
-                question_pdf = requests.get(pdf_file_url)
-                if question_pdf.status_code!=200 : 
-                    return Response({"message":"Failed to Retrive Question From Exam Id From Cloud"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                course_pdf = requests.get(course_pdf_url)
-                if course_pdf.status_code!=200 : 
-                    return Response({"message":"Failed to Retrive Course From Exam Id From Cloud"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            except Exception as e :
-                 return Response({"message":"Internal server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            try:
-                
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_question_file:
-                    temp_question_file.write(question_pdf.content)
+                    temp_question_file.write(question_pdf_response.content)
                     temp_question_file_path = temp_question_file.name
                     question_extracted_text = extract_text_from_pdf(temp_question_file_path)
                     os.remove(temp_question_file_path)
 
-                # THis is for Course text extraction 
-                
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf_file:
-                    temp_pdf_file.write(course_pdf  .content)
-                    temp_pdf_file_path = temp_pdf_file.name
-                    course_extracted_text= extract_text_from_pdf(temp_pdf_file_path)
-                    os.remove(temp_pdf_file_path)
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_course_file:
+                    temp_course_file.write(course_pdf_response.content)
+                    temp_course_file_path = temp_course_file.name
+                    course_extracted_text = extract_text_from_pdf(temp_course_file_path)
+                    os.remove(temp_course_file_path)
+
             except Exception as e:
-                return Response({"message": f"Failed to extract text from PDF: {str(e)}"}, status=500)
+                return Response({"message": f"Failed to extract text from PDFs: {str(e)}"}, status=500)
+
+            # Generate response text based on extracted texts
             try:
-                response_text = generate_response(course_extracted_text,question_extracted_text)
-                print("Generated Response:", response_text)
+                response_text = generate_response(course_extracted_text, question_extracted_text)
             except Exception as e:
                 return Response({"message": f"Failed to generate response: {str(e)}"}, status=500)
 
-            
+            # Update exam record to indicate question uploaded
             try:
                 examId_collection.update_one(
                     {"_id": exam_id},
                     {"$set": {"question_uploaded": True}}
                 )
             except Exception as e:
-                return Response({"message": "Failed to update examId_db."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+                return Response({"message": "Failed to update exam record."}, status=500)
+
+            # Save question paper info to database
             question_collection = get_collection("question_paper_db")
             question_collection.insert_one({
                 "class_id": class_id,
                 "subject": subject_id,
                 "section": section_id,
-                "question_file_url": pdf_file_url,  # Store the Cloudinary URL
+                "question_file_url": question_file_url,  # Store the AWS S3 URL
                 "exam_id": exam_id,
                 "organization_id": organization_id,
                 "question_uploaded": True,
-                "process_qa":True
-                
-            })  
+                "process_qa": True
+            })
+
+            # Save processed response in the QA collection
+            qamodel = get_collection("process_qa")
+            qamodel.insert_one({
+                "exam_id": exam_id,
+                "organization_id": organization_id,
+                "processed_answer": response_text,
+                "question_extracted": question_extracted_text
+            })
+
+            return Response({"message": "Successfully generated answer and uploaded question paper."}, status=200)
+
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
+
+
+# class QuestionPaperUploadSaveAPI(APIView):
+#     def post(self, request, id=None):
+        
+#         try:
+#             question_pdf = request.FILES.get("question_paper_pdf")
+#             class_id = request.data.get('class_selected')
+#             subject_id = request.data.get('subject_selected')
+#             section_id = request.data.get('section_selected')
+#             organization_id = request.data.get('organization')
+#             exam_id = request.data.get('exam_id')
+#             user_id = request.headers.get('userId')
+#             if not user_id:
+#                 return Response({"message": "User ID is required."}, status=400)
+            
+#             user_collection = get_collection('auth_users')
+#             user = user_collection.find_one({"_id": ObjectId(user_id)})
+#             if not user:
+#                 return Response({"message": "User not found."}, status=404)
+            
+#             if not exam_id:
+#                 return Response({"message": "Exam ID must be selected"}, status=400)
+            
+#             if not class_id or not subject_id or not section_id:
+#                 return Response({"message": "Class, Subject, and Section must be selected."}, status=400)
+            
+#             if not question_pdf:
+#                 return Response({"message": "PDF file must be uploaded."}, status=400)
+            
+#             if not question_pdf.name.endswith('.pdf'):
+#                 return Response({"message": "Only PDF files are allowed."}, status=400)
+#             try:
+#                 organization_collection = get_collection("organization_db")
+#                 organization_name = organization_collection.find_one({"_id": ObjectId(organization_id)})['organization_name']
+#                 if not organization_name:
+#                     return Response({"message": "Invalid organization ID or Not Found"}, status=404)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error1"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 classes_collection = get_collection("classes")
+#                 class_name = classes_collection.find_one({"_id": ObjectId(class_id)})['name']
+#                 if not class_name:
+#                     return Response({"message": "Invalid class ID"}, status=404)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error2"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 sections_collection = get_collection("sections")
+#                 section_name = sections_collection.find_one({"_id": ObjectId(section_id)})['name']
+#                 if not section_name:
+#                     return Response({"message": "Invalid section ID"}, status=404)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 subjects_collection = get_collection("subjects")
+#                 subject_name = subjects_collection.find_one({"_id": ObjectId(subject_id)})['name']
+#                 if not subject_name:
+#                     return Response({"message": "Invalid subject ID"}, status=404)
+#             except Exception as e:
+#                 return Response({"message": "Internal Server Error4"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+#             try:
+#                 examId_collection = get_collection("examId_db")
+#                 exam_id = examId_collection.find_one({"_id": exam_id})['_id']
+#                 exam_id = str(exam_id)
+#                 if not exam_id:
+#                     return Response({"message": "Invalid Exam ID"}, status=400)
+#             except Exception as e:
+#                 print(e)
+#                 return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+#             try:
+#                 upload_result = cloudinary.uploader.upload(question_pdf, resource_type="raw")
+              
+#                 pdf_file_url = upload_result.get("secure_url")
+#             except Exception as e:
+#                 return Response({"message": "Failed to upload PDF to Cloudinary."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 course_collection= get_collection("course_pdf")
+#                 course_pdf_url= course_collection.find_one({"exam_id":exam_id})["pdf_file_path"]
+                
+#             except Exception as e :
+            
+#                 return Response({"message": "Failed to download course pdf "}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+#                 question_pdf = requests.get(pdf_file_url)
+#                 if question_pdf.status_code!=200 : 
+#                     return Response({"message":"Failed to Retrive Question From Exam Id From Cloud"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#                 course_pdf = requests.get(course_pdf_url)
+#                 if course_pdf.status_code!=200 : 
+#                     return Response({"message":"Failed to Retrive Course From Exam Id From Cloud"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             except Exception as e :
+#                  return Response({"message":"Internal server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#             try:
+                
+#                 with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_question_file:
+#                     temp_question_file.write(question_pdf.content)
+#                     temp_question_file_path = temp_question_file.name
+#                     question_extracted_text = extract_text_from_pdf(temp_question_file_path)
+#                     os.remove(temp_question_file_path)
+
+#                 # THis is for Course text extraction 
+                
+#                 with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf_file:
+#                     temp_pdf_file.write(course_pdf  .content)
+#                     temp_pdf_file_path = temp_pdf_file.name
+#                     course_extracted_text= extract_text_from_pdf(temp_pdf_file_path)
+#                     os.remove(temp_pdf_file_path)
+#             except Exception as e:
+#                 return Response({"message": f"Failed to extract text from PDF: {str(e)}"}, status=500)
+#             try:
+#                 response_text = generate_response(course_extracted_text,question_extracted_text)
+#                 print("Generated Response:", response_text)
+#             except Exception as e:
+#                 return Response({"message": f"Failed to generate response: {str(e)}"}, status=500)
+
+            
+#             try:
+#                 examId_collection.update_one(
+#                     {"_id": exam_id},
+#                     {"$set": {"question_uploaded": True}}
+#                 )
+#             except Exception as e:
+#                 return Response({"message": "Failed to update examId_db."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+#             question_collection = get_collection("question_paper_db")
+#             question_collection.insert_one({
+#                 "class_id": class_id,
+#                 "subject": subject_id,
+#                 "section": section_id,
+#                 "question_file_url": pdf_file_url,  # Store the Cloudinary URL
+#                 "exam_id": exam_id,
+#                 "organization_id": organization_id,
+#                 "question_uploaded": True,
+#                 "process_qa":True
+                
+#             })  
+#         except Exception as e:
+#             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
         
 
-        try: 
-            qamodel= get_collection("process_qa")
-            qamodel.insert_one({
-                "exam_id":exam_id,
-                 "organization_id": organization_id,
-                 "processed_answer":response_text,
-                 "question_extracted":question_extracted_text
-            })
-        except Exception as e  : 
-            return Response({"message":"Falied to save reponse in Db "}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        return Response({"message": f"Successfully generated answer"}, status=status.HTTP_200_OK)
+#         try: 
+#             qamodel= get_collection("process_qa")
+#             qamodel.insert_one({
+#                 "exam_id":exam_id,
+#                  "organization_id": organization_id,
+#                  "processed_answer":response_text,
+#                  "question_extracted":question_extracted_text
+#             })
+#         except Exception as e  : 
+#             return Response({"message":"Falied to save reponse in Db "}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+#         return Response({"message": f"Successfully generated answer"}, status=status.HTTP_200_OK)
 
 
 # ########################################
