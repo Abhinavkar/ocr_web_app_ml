@@ -1,0 +1,12 @@
+version: '1.0'
+
+services:
+  backend:
+    build: .
+    container_name: ocr_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/ocr_web_app_ml
+    environment:
+      - DEBUG=True

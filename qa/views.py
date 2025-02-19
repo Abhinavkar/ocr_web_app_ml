@@ -273,7 +273,7 @@ class QuestionPaperUploadSaveAPI(APIView):
             if not exam_record:
                 return Response({"message": "Invalid Exam ID"}, status=400)
 
-            # AWS S3 Upload Process
+
             try:
                 s3_client = boto3.client(
                     's3',
@@ -559,8 +559,20 @@ class AnswerUploadAPI(APIView):
                     if not organization:
                         return Response({"error": "Organization  is required"}, status=status.HTTP_400_BAD_REQUEST)
                     try:
-                        upload_result = cloudinary.uploader.upload(answer_pdf, resource_type="raw")
-                        pdf_file_url = upload_result.get("secure_url")
+                         
+                                s3_client = boto3.client(
+                                    's3',
+                                    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                                    region_name=os.getenv("AWS_S3_REGION_NAME")
+                                )
+
+                                file_key = f"question_papers/{datetime.now().strftime('%Y%m%d%H%M%S')}_{answer_pdf.name}"
+                                bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME")
+                                s3_client.upload_fileobj(answer_pdf, bucket_name, file_key)
+                                upload_result = f"https://{bucket_name}.s3.{os.getenv('AWS_S3_REGION_NAME')}.amazonaws.com/{file_key}"
+                                
+                                pdf_file_url = upload_result
                     except Exception as e:
                         print("Error uploading PDF to Cloudinary:", str(e))
                         return Response({"message": "Internal Server Error while uploading PDF to Cloudinary"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

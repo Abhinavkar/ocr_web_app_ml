@@ -16,7 +16,7 @@ import base64
 from authentication.db_wrapper import get_collection
 from PIL import Image 
 from django.conf import settings
-import cv2 
+# import cv2 
 import pytesseract
 from requests import Response
 import together
@@ -44,13 +44,13 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 ##########################################################################
-def preprocess_image(image):
-    """
-    Preprocess the image for better OCR results.
-    """
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    return binary
+# def preprocess_image(image):
+    # """
+    # Preprocess the image for better OCR results.
+    # """
+    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # _, binary = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    # return binary
 def encode_image_to_base64(image_path):
     """
     Encode an image file to a base64 string.
@@ -266,13 +266,13 @@ def convert_pdf_to_images(pdf_file_path, output_folder, image_format="jpeg"):
     print(f"PDF converted to images: {image_paths}")
     return image_paths
 
-def preprocess_image(image):
-    """
-    Preprocess the image for better OCR results.
-    """
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    return binary
+# def preprocess_image(image):
+    # """
+    # Preprocess the image for better OCR results.
+    # """
+    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # _, binary = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    # return binary
 def encode_image_to_base64(image_path):
     """
     Encode an image file to a base64 string.
