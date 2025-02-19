@@ -4,32 +4,21 @@ from dotenv import load_dotenv
 import os
 ##########################################################################
 import re
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
+
 import numpy as np
-import torch
-from transformers import XLMRobertaTokenizer, XLMRobertaModel
+
 from pdf2image import convert_from_path
 import tempfile
-import pdfplumber
 import base64
 from authentication.db_wrapper import get_collection
 from PIL import Image 
 from django.conf import settings
 # import cv2 
 import pytesseract
-from requests import Response
-import together
-import torch
-from transformers import BertTokenizer, BertForSequenceClassification
-from sentence_transformers import SentenceTransformer, util
-import textstat
+
 
 ##########################################################################
 
-# Load XLM-RoBERTa tokenizer and model
-tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-base')
-model = XLMRobertaModel.from_pretrained('xlm-roberta-base')
 # Load environment variables from .env file
 load_dotenv()
 
@@ -192,16 +181,6 @@ def extract_questions_from_images(image_paths):
             question_counter += 1
     
     return questions
-def extract_text_from_PDF(pdf_path):
-    """
-    Extract text from a PDF file using pdfplumber.
-    """
-    try:
-        with pdfplumber.open(pdf_path) as pdf:
-            full_text = "".join(page.extract_text() or "" for page in pdf.pages)
-        return full_text
-    except Exception as e:
-        return f"Error extracting text from PDF: {str(e)}"
 
 def extract_text_from_scanned_pdf(pdf_path):
     """
@@ -347,147 +326,8 @@ def evaluate_answer(user_answer, model_answer):
     return completion.choices[0].message.content
 
 
-# #######################################################################################
-
-def generate_xlmr_embeddings(text):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-    with torch.no_grad():
-        outputs = model(**inputs)
-    embeddings = outputs.last_hidden_state.mean(dim=1).squeeze().numpy()
-    return embeddings
-
-def compute_xlmr_similarity(user_answer, model_generated_answer):
-    user_embedding = generate_xlmr_embeddings(user_answer)
-    model_embedding = generate_xlmr_embeddings(model_generated_answer)
-    # similarity = cosine_similarity([user_embedding], [model_embedding])[0][0]
-    similarity = cosine_similarity(user_embedding.reshape(1, -1), model_embedding.reshape(1, -1))[0][0]
-
-    return similarity * 100  
-
-
-def evaluate_answers(user_answer, model_generated_answer):
-    xlmr_score = compute_xlmr_similarity(user_answer, model_generated_answer)
-    factual_score = compute_factual_accuracy(user_answer, model_generated_answer)
-    clarity_score = compute_clarity_and_length(user_answer)
-    final_score = (xlmr_score * 0.7) + (factual_score * 0.2) + (clarity_score * 0.1)
-    return final_score
-
-
-def compute_factual_accuracy(user_answer, model_generated_answer):
-    # Extract key terms or phrases from the model-generated answer
-    key_terms = set(model_generated_answer.lower().split())
-    user_terms = set(user_answer.lower().split())
-    overlap = key_terms.intersection(user_terms)
-    factual_score = (len(overlap) / len(key_terms)) * 100 if key_terms else 0
-    return factual_score
-
-def compute_clarity_and_length(user_answer):
-    token_count = len(tokenizer.encode(user_answer))
-    if token_count < 50:
-        clarity_score = 50 
-    elif token_count > 150:
-        clarity_score = 50  
-    else:
-        clarity_score = 100
-    return clarity_score
+# ############################################################
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def extract_text_from_pdf(file_path):
-#     """Extract text from a PDF file."""
-#     try:
-#         reader = PdfReader(file_path)
-#         text = "\n".join(page.extract_text() for page in reader.pages)
-#         return text
-#     except Exception as e:
-#         raise ValueError(f"Error reading PDF file: {e}")
-
-
-
-# def split_questions_from_text(pdf_path):
-#     """Extract questions from a PDF file."""
-#     with open(pdf_path, 'rb') as file:
-#         pdf_reader = PdfReader(file)
-#         first_page = pdf_reader.pages[0]
-#         text = first_page.extract_text()
-#         questions = re.findall(r'\d*\.*\s*([^?]+\?*)', text)
-#         cleaned_questions = [
-#             re.sub(r'\s+', ' ', q).strip()
-#             for q in questions
-#             if len(q.strip()) > 3
-#         ]
-#         return cleaned_questions
-    
-    
-    
-# def get_answer(question, context):
-#     """Get the most relevant answer for a question from a context using OpenAI API."""
-#     # Define the system message and user query as chat messages
-#     messages = [
-#         {"role": "system", "content": "You are a helpful assistant."},
-#         {"role": "user", "content": f"Context: {context}\n\nQuestion: {question}"}
-#     ]
-#     openai.api_key = settings.OPENAI_API_KEY
-
-
-#     # Use the chat completion endpoint for the model
-#     response = openai.ChatCompletion.create(
-#         model="gpt-4o-mini-2024-07-18",  
-#         messages=messages,
-#         max_tokens=150,
-#         temperature=0,
-       
-#     )
-
-#     answer = response['choices'][0]['message']['content'].strip()
-#     return answer
-
-
-
-# def display_results(question, context):
-#     """Display search results for an individual question with answers."""
-#     print(f"\n[QUESTION] {question}")
-#     print(f"\n[Context]:")
-#     print(f"{context[:500]}...")  # Display a snippet of the context (first 500 characters)
-
-#     answer = get_answer(question, context)
-#     print(f"Answer: {answer}")
-#     print(f"{'-'*80}")
