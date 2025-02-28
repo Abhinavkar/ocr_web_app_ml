@@ -463,6 +463,7 @@ class AnswerUploadAPI(APIView):
                         return Response({"message": f"An error occurred: {str(e)}"}, status=500)
                     
                     text = final_score
+                    questions = questions.strip("\n")
 
                     pattern = r"Answer (\d+): (\d+)"
                     matches = re.findall(pattern, text)
