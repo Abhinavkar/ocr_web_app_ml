@@ -1,5 +1,4 @@
 version: '1.0'
-
 services:
   backend:
     build: .
@@ -9,4 +8,4 @@ services:
     volumes:
       - .:/ocr_web_app_ml
     environment:
-      - DEBUG=True
+      - DEBUG=FALSE

@@ -50,30 +50,30 @@ def encode_image_to_base64(image_path):
     except FileNotFoundError:
         return None
 
-def extract_text_from_image(image_path, prompt):
-    """
-    Extract text from an image using Together's Vision-Instruct-Turbo model.
-    """
-    print("Processing the image... Please wait.")
+# def extract_text_from_image(image_path, prompt):
+#     """
+#     Extract text from an image using Together's Vision-Instruct-Turbo model.
+#     """
+#     print("Processing the image... Please wait.")
 
-    base64_image = encode_image_to_base64(image_path)
-    if not base64_image:
-        return "Error: Image file not found."
-    client = get_together_client()
-    stream = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
-        messages=[
-            {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}
-        ],
-        stream=True,
-    )
+#     base64_image = encode_image_to_base64(image_path)
+#     if not base64_image:
+#         return "Error: Image file not found."
+#     client = get_together_client()
+#     stream = client.chat.completions.create(
+#         model="meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+#         messages=[
+#             {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}
+#         ],
+#         stream=True,
+#     )
 
-    extracted_text = ""
-    for chunk in stream:
-        if (chunk.choices and chunk.choices[0].delta.content):
-            extracted_text += chunk.choices[0].delta.content
+#     extracted_text = ""
+#     for chunk in stream:
+#         if (chunk.choices and chunk.choices[0].delta.content):
+#             extracted_text += chunk.choices[0].delta.content
 
-    return extracted_text.strip()
+#     return extracted_text.strip()
 
 
 
@@ -272,7 +272,7 @@ def extract_text_from_image(image_path, prompt):
         return "Error: Image file not found."
     client = get_together_client()
     stream = client.chat.completions.create(
-        model="meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
+        model="meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
         messages=[
             {"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}
         ],
@@ -316,8 +316,32 @@ def evaluate_answer(user_answer, model_answer):
     api_key = os.getenv("TOGETHER_API_KEY")
     client = get_together_client()
     messages = [
-        {"role": "user", "content": f"User Answer: {user_answer}\n Model Answer: {model_answer} Evaluate the answer according to the model answer and give us score to each answer out of 100 on the basis of factual correctness, relevance, and completeness. Scoring format is Answer 1: 80, Answer 2: 90, etc."}
-    ]
+    {
+        "role": "user",
+        "content": (
+            f"User Answer: {user_answer}\n"
+            f"Model Answer: {model_answer}\n"
+            "You are evaluating user responses in a chatbot interaction. Compare the user answer with the model's answer with respect to questions provided using the following criteria:\n"
+            "Relevance: Does the user response directly address the question provided?\n"
+            "Clarity: Is the user's answer easy to understand and free from ambiguity?\n"
+            "Correctness: Does the user's logic or explanation align with the correct concepts or facts?\n"
+            "Factual Accuracy: Are the details provided by the user factually correct?\n"
+            "Assign a score that is mention in the question like (5 marks or 3 marks )accordingly based on how well the user response meets these criteria. If points are deducted, explain clearly and concisely which criteria were not met and why.\n"
+            "Ensure the output strictly follows this JSON format:\n"
+            "The remarks must be actionable and specific, avoiding vague or generic feedback.\n"
+            "Ensure the tone remains neutral and constructive.\n"
+            '{\n'
+            '    "question_1": {\n'
+            '        "question": "Insert the provided question here",\n'
+            '        "answer_1": "Insert the user\'s response here",\n'
+            '        "model_answer": "Insert the chatbot\'s correct answer here",\n'
+            '        "remark": "Explain why marks were deducted — specify issues with relevance, clarity, correctness, or factual accuracy",\n'
+            '        "score": "Insert a score between 0 to 100"\n'
+            '    }\n'
+            '}'
+        )
+    }
+]
     completion = client.chat.completions.create(
         model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
         messages=messages,
