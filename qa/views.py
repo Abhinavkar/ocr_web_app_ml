@@ -511,6 +511,7 @@ class AnswerUploadAPI(APIView):
                                 "class_name":class_data,
                                 "section_name":section_data,
                                 "subject_name":subject_data,
+                                "final_score":final_score,
                             })
                             return Response(results, status=status.HTTP_200_OK)
                     except Exception as e:

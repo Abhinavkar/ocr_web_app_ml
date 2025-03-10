@@ -336,7 +336,7 @@ def evaluate_answer(user_answer, model_answer):
             '        "answer_1": "Insert the user\'s response here",\n'
             '        "model_answer": "Insert the chatbot\'s correct answer here",\n'
             '        "remark": "Explain why marks were deducted — specify issues with relevance, clarity, correctness, or factual accuracy",\n'
-            '        "score": "Insert a score between 0 to 100"\n'
+            '        "score": "Insert a score according to the mark given in question out of that score"\n'
             '    }\n'
             '}'
         )
