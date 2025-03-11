@@ -479,6 +479,7 @@ class AnswerUploadAPI(APIView):
                 
                     try:
                               final_score=evaluate_answer(extracted_text, model_answer)
+                              final_score = final_score.replace('{', '').replace('}', '').replace('*', '').replace('```', '').replace('\t','')
                               print(final_score)
 
                     except Exception as e:
