@@ -375,162 +375,295 @@ class QuestionPaperUploadSaveAPI(APIView):
 
 
 
+# class AnswerUploadAPI(APIView):
+        
+#         def post(self, request):
+                
+#                 try:
+                 
+#                     answers_db_collection = get_collection("answers_db")
+#                     class_collection = get_collection("classes")
+#                     section_collection = get_collection("sections")
+#                     subject_collection = get_collection("subjects")
+#                     roll_no = request.data.get('rollNo')
+#                     exam_id = request.data.get('examId')
+#                     class_id = request.data.get('classId')
+#                     subject = request.data.get('subjectId')
+#                     section = request.data.get('sectionId')
+#                     answer_pdf = request.FILES.get('answer_pdf')
+#                     organization = request.data.get('organizationId')
+#                     if not roll_no:
+#                         return Response({"error": "Roll number is required"}, status=status.HTTP_400_BAD_REQUEST)
+#                     if not exam_id:
+#                         return Response({"error": "Exam ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+#                     if not class_id:
+#                         return Response({"error": "Class ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+#                     if not subject:
+#                         return Response({"error": "Subject is required"}, status=status.HTTP_400_BAD_REQUEST)
+#                     if not section:
+#                         return Response({"error": "Section is required"}, status=status.HTTP_400_BAD_REQUEST)
+#                     if not answer_pdf:
+#                         return Response({"error": "Answer PDF is required"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+#                     if not organization:
+#                         return Response({"error": "Organization  is required"}, status=status.HTTP_400_BAD_REQUEST)
+#                     try:
+                         
+#                                 s3_client = boto3.client(
+#                                     's3',
+#                                     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+#                                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+#                                     region_name=os.getenv("AWS_S3_REGION_NAME")
+#                                 )
+
+#                                 file_key = f"question_papers/{datetime.now().strftime('%Y%m%d%H%M%S')}_{answer_pdf.name}"
+#                                 bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME")
+#                                 s3_client.upload_fileobj(answer_pdf, bucket_name, file_key)
+#                                 upload_result = f"https://{bucket_name}.s3.{os.getenv('AWS_S3_REGION_NAME')}.amazonaws.com/{file_key}"
+                                
+#                                 pdf_file_url = upload_result
+#                     except Exception as e:
+#                         print("Error uploading PDF to S3:", str(e))
+#                         return Response({"message": "Internal Server Error while uploading PDF to S3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#                     try:
+#                         class_data = class_collection.find_one({"_id": ObjectId(class_id)})['name']
+#                         if not class_data:
+#                             return Response({"error": "Invalid class ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+#                         section_data = section_collection.find_one({'_id': ObjectId(section)})['name']
+#                         if not section_data:
+#                             return Response({"error": "Invalid section ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+#                         subject_data = subject_collection.find_one({'_id': ObjectId(subject)})['name']
+#                     except Exception as e:
+#                         print("Error fetching metadata:", str(e))
+#                         return Response({"error": "Error fetching class/section/subject data"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+#                     try:
+#                         response = requests.get(pdf_file_url)
+#                         pdf_path = os.path.join("/tmp", answer_pdf.name)  
+#                         with open(pdf_path, 'wb') as f:
+#                             f.write(response.content)
+#                         extracted_text = extract_answers_from_pdf(pdf_path)
+#                         if not extracted_text:
+#                             return Response({"error": "The extracted text from the PDF is empty. Please provide a valid PDF."},status=status.HTTP_400_BAD_REQUEST)
+#                     except Exception as e:
+#                         print("Error extracting text from PDF:", str(e))
+#                         return Response({"error": "Ocr extraction failed :"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#                     try:
+#                         questions_collection=get_collection("process_qa")
+#                         try : 
+#                           questions=questions_collection.find_one({"exam_id":exam_id})["question_extracted"]
+#                         except Exception as e:
+#                             print("Error fetching questions:", str(e))
+#                             return Response({"error": "Error fetching questions"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#                         try :
+#                             model_answer = questions_collection.find_one({"exam_id":exam_id})["processed_answer"]
+#                         except Exception as e:
+#                             print("Error fetching model answers:", str(e))
+#                             return Response({"error": "Error fetching model answers"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#                     except Exception as e:
+#                         print("Error fetching questions and model answers:", str(e))
+#                         return Response({"error": "Error fetching questions and model answers"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#                     try:
+#                         api_key = os.getenv("TOGETHER_API_KEY")
+#                         if not api_key:
+#                             raise ValueError("TOGETHER_API_KEY not found in environment variables")
+#                         client = Together(api_key=api_key)
+#                     except Exception as e:  
+#                         print("Error initializing Together client:", str(e))
+#                         return Response({"error": "Error initializing Together client"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
+#                     results = []
+                
+#                     try:
+#                               final_score=evaluate_answer(extracted_text, model_answer)
+#                               final_score = final_score.replace('{', '').replace('}', '').replace('*', '').replace('```', '').replace('\t','').replace('"','')
+#                               print(final_score)
+
+#                     except Exception as e:
+#                         print("Error evaluating answer:", str(e))
+#                         return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+#                     try: 
+#                             text = final_score
+
+#                             results.append({
+#                                         "question": questions,
+#                                         "user_answer": extracted_text,
+#                                         "model_generated_answer": model_answer,
+#                                         "final_score": final_score,
+#                                     })
+#                             results_collection=get_collection('results_db')
+#                             results_collection.insert_one({
+#                                 "results":results,
+#                                 "roll_no":roll_no,
+#                                 "organization_id":organization,
+#                                 "section_id":section,
+#                                 "subject_id":subject,
+#                                 "class_id":class_id,
+#                                 "exam_id":exam_id,
+#                                 "answer_pdf":pdf_file_url,
+#                                 "class_name":class_data,
+#                                 "section_name":section_data,
+#                                 "subject_name":subject_data,
+#                                 "final_score":final_score,
+#                             })
+#                             return Response(results, status=status.HTTP_200_OK)
+#                     except Exception as e:
+#                             print("Error evaluating final score :", str(e))
+#                             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+#                 except Exception as e:
+#                             print("Error extracting text from PDF jhsdbvushb :", str(e))
+#                             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
+
+
+
 class AnswerUploadAPI(APIView):
         
-        def post(self, request):
-                
+    def post(self, request):
+        try:
+            answers_db_collection = get_collection("answers_db")
+            class_collection = get_collection("classes")
+            section_collection = get_collection("sections")
+            subject_collection = get_collection("subjects")
+            roll_no = request.data.get('rollNo')
+            exam_id = request.data.get('examId')
+            class_id = request.data.get('classId')
+            subject = request.data.get('subjectId')
+            section = request.data.get('sectionId')
+            answer_pdf = request.FILES.get('answer_pdf')
+            organization = request.data.get('organizationId')
+
+            if not roll_no:
+                return Response({"error": "Roll number is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not exam_id:
+                return Response({"error": "Exam ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not class_id:
+                return Response({"error": "Class ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not subject:
+                return Response({"error": "Subject is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not section:
+                return Response({"error": "Section is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not answer_pdf:
+                return Response({"error": "Answer PDF is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not organization:
+                return Response({"error": "Organization is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                    region_name=os.getenv("AWS_S3_REGION_NAME")
+                )
+
+                file_key = f"question_papers/{datetime.now().strftime('%Y%m%d%H%M%S')}_{answer_pdf.name}"
+                bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME")
+                s3_client.upload_fileobj(answer_pdf, bucket_name, file_key)
+                upload_result = f"https://{bucket_name}.s3.{os.getenv('AWS_S3_REGION_NAME')}.amazonaws.com/{file_key}"
+
+                pdf_file_url = upload_result
+            except Exception as e:
+                print("Error uploading PDF to S3:", str(e))
+                return Response({"message": "Internal Server Error while uploading PDF to S3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            try:
+                class_data = class_collection.find_one({"_id": ObjectId(class_id)})['name']
+                if not class_data:
+                    return Response({"error": "Invalid class ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+                section_data = section_collection.find_one({'_id': ObjectId(section)})['name']
+                if not section_data:
+                    return Response({"error": "Invalid section ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+                subject_data = subject_collection.find_one({'_id': ObjectId(subject)})['name']
+            except Exception as e:
+                print("Error fetching metadata:", str(e))
+                return Response({"error": "Error fetching class/section/subject data"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            try:
+                response = requests.get(pdf_file_url)
+                pdf_path = os.path.join("/tmp", answer_pdf.name)
+                with open(pdf_path, 'wb') as f:
+                    f.write(response.content)
+                extracted_text = extract_answers_from_pdf(pdf_path)
+                if not extracted_text:
+                    return Response({"error": "The extracted text from the PDF is empty. Please provide a valid PDF."}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print("Error extracting text from PDF:", str(e))
+                return Response({"error": "OCR extraction failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            try:
+                questions_collection = get_collection("process_qa")
                 try:
-                 
-                    answers_db_collection = get_collection("answers_db")
-                    class_collection = get_collection("classes")
-                    section_collection = get_collection("sections")
-                    subject_collection = get_collection("subjects")
-                    roll_no = request.data.get('rollNo')
-                    exam_id = request.data.get('examId')
-                    class_id = request.data.get('classId')
-                    subject = request.data.get('subjectId')
-                    section = request.data.get('sectionId')
-                    answer_pdf = request.FILES.get('answer_pdf')
-                    organization = request.data.get('organizationId')
-                    if not roll_no:
-                        return Response({"error": "Roll number is required"}, status=status.HTTP_400_BAD_REQUEST)
-                    if not exam_id:
-                        return Response({"error": "Exam ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-                    if not class_id:
-                        return Response({"error": "Class ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-                    if not subject:
-                        return Response({"error": "Subject is required"}, status=status.HTTP_400_BAD_REQUEST)
-                    if not section:
-                        return Response({"error": "Section is required"}, status=status.HTTP_400_BAD_REQUEST)
-                    if not answer_pdf:
-                        return Response({"error": "Answer PDF is required"}, status=status.HTTP_400_BAD_REQUEST)
-                    
-                    if not organization:
-                        return Response({"error": "Organization  is required"}, status=status.HTTP_400_BAD_REQUEST)
-                    try:
-                         
-                                s3_client = boto3.client(
-                                    's3',
-                                    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                                    region_name=os.getenv("AWS_S3_REGION_NAME")
-                                )
-
-                                file_key = f"question_papers/{datetime.now().strftime('%Y%m%d%H%M%S')}_{answer_pdf.name}"
-                                bucket_name = os.getenv("AWS_STORAGE_BUCKET_NAME")
-                                s3_client.upload_fileobj(answer_pdf, bucket_name, file_key)
-                                upload_result = f"https://{bucket_name}.s3.{os.getenv('AWS_S3_REGION_NAME')}.amazonaws.com/{file_key}"
-                                
-                                pdf_file_url = upload_result
-                    except Exception as e:
-                        print("Error uploading PDF to S3:", str(e))
-                        return Response({"message": "Internal Server Error while uploading PDF to S3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    try:
-                        class_data = class_collection.find_one({"_id": ObjectId(class_id)})['name']
-                        if not class_data:
-                            return Response({"error": "Invalid class ID"}, status=status.HTTP_400_BAD_REQUEST)
-
-                        section_data = section_collection.find_one({'_id': ObjectId(section)})['name']
-                        if not section_data:
-                            return Response({"error": "Invalid section ID"}, status=status.HTTP_400_BAD_REQUEST)
-
-                        subject_data = subject_collection.find_one({'_id': ObjectId(subject)})['name']
-                    except Exception as e:
-                        print("Error fetching metadata:", str(e))
-                        return Response({"error": "Error fetching class/section/subject data"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                    try:
-                        response = requests.get(pdf_file_url)
-                        pdf_path = os.path.join("/tmp", answer_pdf.name)  
-                        with open(pdf_path, 'wb') as f:
-                            f.write(response.content)
-                        extracted_text = extract_answers_from_pdf(pdf_path)
-                        if not extracted_text:
-                            return Response({"error": "The extracted text from the PDF is empty. Please provide a valid PDF."},status=status.HTTP_400_BAD_REQUEST)
-                    except Exception as e:
-                        print("Error extracting text from PDF:", str(e))
-                        return Response({"error": "Ocr extraction failed :"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    try:
-                        questions_collection=get_collection("process_qa")
-                        try : 
-                          questions=questions_collection.find_one({"exam_id":exam_id})["question_extracted"]
-                        except Exception as e:
-                            print("Error fetching questions:", str(e))
-                            return Response({"error": "Error fetching questions"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                        try :
-                            model_answer = questions_collection.find_one({"exam_id":exam_id})["processed_answer"]
-                        except Exception as e:
-                            print("Error fetching model answers:", str(e))
-                            return Response({"error": "Error fetching model answers"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    except Exception as e:
-                        print("Error fetching questions and model answers:", str(e))
-                        return Response({"error": "Error fetching questions and model answers"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    try:
-                        api_key = os.getenv("TOGETHER_API_KEY")
-                        if not api_key:
-                            raise ValueError("TOGETHER_API_KEY not found in environment variables")
-                        client = Together(api_key=api_key)
-                    except Exception as e:  
-                        print("Error initializing Together client:", str(e))
-                        return Response({"error": "Error initializing Together client"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                    
-                    results = []
-                
-                    try:
-                              final_score=evaluate_answer(extracted_text, model_answer)
-                              final_score = final_score.replace('{', '').replace('}', '').replace('*', '').replace('```', '').replace('\t','')
-                              print(final_score)
-
-                    except Exception as e:
-                        print("Error evaluating answer:", str(e))
-                        return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-                    try: 
-                            text = final_score
-
-                            pattern = r'"score":\s*"(\d+(?:\.\d+)?)/(\d+)"'
-                            matches = re.findall(pattern, text)
-                            
-                            total_obtained_score = sum(float(num) for num, denom in matches)
-                            total_possible_score = sum(int(denom) for num, denom in matches)
-                            final_percentage = (total_obtained_score / total_possible_score) * 100 if total_possible_score > 0 else 0
-
-                            print("Total Score:", total_obtained_score)
-                            print("Total Possible Score:", total_possible_score)
-                            print("Final Percentage:", final_percentage)
-
-                            scores_dict = {f"Answer {idx+1}": float(num) for idx, (num, denom) in enumerate(matches)}
-                            results.append({
-                                        "question": questions,
-                                        "user_answer": extracted_text,
-                                        "model_generated_answer": model_answer,
-                                        "final_score": final_score,
-                                        "scores": scores_dict,
-                                        "total_obtained_score": total_obtained_score,
-                                        "total_possible_score": total_possible_score,
-                                        "final_percentage": final_percentage
-                                    })
-                            results_collection=get_collection('results_db')
-                            results_collection.insert_one({
-                                "results":results,
-                                "roll_no":roll_no,
-                                "organization_id":organization,
-                                "section_id":section,
-                                "subject_id":subject,
-                                "class_id":class_id,
-                                "exam_id":exam_id,
-                                "answer_pdf":pdf_file_url,
-                                "class_name":class_data,
-                                "section_name":section_data,
-                                "subject_name":subject_data,
-                                "final_score":final_score,
-                                "total_obtained_score": total_obtained_score,
-                                "total_possible_score": total_possible_score,
-                                "final_percentage": final_percentage
-                            })
-                            return Response(results, status=status.HTTP_200_OK)
-                    except Exception as e:
-                            print("Error evaluating final score :", str(e))
-                            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+                    questions = questions_collection.find_one({"exam_id": exam_id})["question_extracted"]
                 except Exception as e:
-                            print("Error extracting text from PDF jhsdbvushb :", str(e))
-                            return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+                    print("Error fetching questions:", str(e))
+                    return Response({"error": "Error fetching questions"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+                try:
+                    model_answer = questions_collection.find_one({"exam_id": exam_id})["processed_answer"]
+                except Exception as e:
+                    print("Error fetching model answers:", str(e))
+                    return Response({"error": "Error fetching model answers"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except Exception as e:
+                print("Error fetching questions and model answers:", str(e))
+                return Response({"error": "Error fetching questions and model answers"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            try:
+                api_key = os.getenv("TOGETHER_API_KEY")
+                if not api_key:
+                    raise ValueError("TOGETHER_API_KEY not found in environment variables")
+                client = Together(api_key=api_key)
+            except Exception as e:
+                print("Error initializing Together client:", str(e))
+                return Response({"error": "Error initializing Together client"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            results = []
+
+            try:
+                final_score = evaluate_answer(extracted_text, model_answer)
+                final_score = final_score.replace('{', '').replace('}', '').replace('*', '').replace('```', '').replace('\t', '').replace('"', '')
+                print(final_score)
+            except Exception as e:
+                print("Error evaluating answer:", str(e))
+                return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+
+            try:
+                text = final_score
+
+                results.append({
+                    "question": questions,
+                    "user_answer": extracted_text,
+                    "model_generated_answer": model_answer,
+                    "final_score": final_score,
+                })
+
+                # Extract scores and calculate the total obtained score
+                score_pattern = re.findall(r"score:\s*(\d+)/\d+", final_score)
+                total_obtained_score = sum(map(int, score_pattern))
+
+                results_collection = get_collection('results_db')
+                results_collection.insert_one({
+                    "results": results,
+                    "roll_no": roll_no,
+                    "organization_id": organization,
+                    "section_id": section,
+                    "subject_id": subject,
+                    "class_id": class_id,
+                    "exam_id": exam_id,
+                    "answer_pdf": pdf_file_url,
+                    "class_name": class_data,
+                    "section_name": section_data,
+                    "subject_name": subject_data,
+                    "final_score": final_score,
+                    "total_obtained_score": total_obtained_score,  # Store total score
+                })
+                return Response(results, status=status.HTTP_200_OK)
+            except Exception as e:
+                print("Error evaluating final score:", str(e))
+                return Response({"message": f"An error occurred: {str(e)}"}, status=500)
+        except Exception as e:
+            print("Error extracting text from PDF:", str(e))
+            return Response({"message": f"An error occurred: {str(e)}"}, status=500)

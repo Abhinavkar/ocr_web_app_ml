@@ -331,13 +331,13 @@ def evaluate_answer(user_answer, model_answer):
             "The remarks must be actionable and specific, avoiding vague or generic feedback.\n"
             "Ensure the tone remains neutral and constructive.\n"
             '{\n'
-            '    "question_1": {\n'
-            '        "question": "Insert the provided question here",\n'
-            '        "answer_1": "Insert the user\'s response here",\n'
-            '        "model_answer": "Insert the chatbot\'s correct answer here",\n'
-            '        "remark": "Explain why marks were deducted — specify issues with relevance, clarity, correctness, or factual accuracy",\n'
-            '        "score": "Insert a score according to the mark given in question out of that score"\n'
-            '    }\n'
+            '"question_1": {\n'
+            '"question": "Insert the provided question here",\n'
+            '"answer_1": "Insert the user\'s response here",\n'
+            '"model_answer": "Insert the chatbot\'s correct answer here",\n'
+            '"Evaluator Remark": "Explain why marks were deducted — specify issues with relevance, clarity, correctness, or factual accuracy",\n'
+            '"score": "Insert a score according to the mark given in question out of that score and show only the obtained mark"\n'
+            '}\n'
             '}'
         )
     }
