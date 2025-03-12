@@ -375,7 +375,6 @@ class QuestionPaperUploadSaveAPI(APIView):
 
 
 
-# ########################################
 class AnswerUploadAPI(APIView):
         
         def post(self, request):
@@ -488,16 +487,27 @@ class AnswerUploadAPI(APIView):
                     try: 
                             text = final_score
 
-                            pattern = r"Answer (\d+): (\d+)"
+                            pattern = r'"score":\s*"(\d+(?:\.\d+)?)/(\d+)"'
                             matches = re.findall(pattern, text)
-                            scores_dict = {f"Answer {num}": int(score) for num, score in matches}
-                            print(scores_dict)
+                            
+                            total_obtained_score = sum(float(num) for num, denom in matches)
+                            total_possible_score = sum(int(denom) for num, denom in matches)
+                            final_percentage = (total_obtained_score / total_possible_score) * 100 if total_possible_score > 0 else 0
+
+                            print("Total Score:", total_obtained_score)
+                            print("Total Possible Score:", total_possible_score)
+                            print("Final Percentage:", final_percentage)
+
+                            scores_dict = {f"Answer {idx+1}": float(num) for idx, (num, denom) in enumerate(matches)}
                             results.append({
                                         "question": questions,
                                         "user_answer": extracted_text,
                                         "model_generated_answer": model_answer,
                                         "final_score": final_score,
-                                        "scores":scores_dict
+                                        "scores": scores_dict,
+                                        "total_obtained_score": total_obtained_score,
+                                        "total_possible_score": total_possible_score,
+                                        "final_percentage": final_percentage
                                     })
                             results_collection=get_collection('results_db')
                             results_collection.insert_one({
@@ -513,6 +523,9 @@ class AnswerUploadAPI(APIView):
                                 "section_name":section_data,
                                 "subject_name":subject_data,
                                 "final_score":final_score,
+                                "total_obtained_score": total_obtained_score,
+                                "total_possible_score": total_possible_score,
+                                "final_percentage": final_percentage
                             })
                             return Response(results, status=status.HTTP_200_OK)
                     except Exception as e:
@@ -521,10 +534,3 @@ class AnswerUploadAPI(APIView):
                 except Exception as e:
                             print("Error extracting text from PDF jhsdbvushb :", str(e))
                             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-                          
-            
-########################################
-
-
-
-
