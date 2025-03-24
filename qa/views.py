@@ -641,9 +641,25 @@ class AnswerUploadAPI(APIView):
                 })
 
                 # Extract scores and calculate the total obtained score
-                score_pattern = re.findall(r"score:\s*(\d+)/\d+", final_score)
-                total_obtained_score = sum(map(int, score_pattern))
+                # score_pattern = re.findall(r"score:\s*(\d+)/\d+", final_score)
+                
+                # total_obtained_score = sum(map(int, score_pattern))
+                score_pattern = re.findall(r"score:\s*(\d+)(?:/(\d+))?", final_score)
 
+                total_obtained_score = 0
+                formatted_scores = []
+
+                for score in score_pattern:
+                    obtained = int(score[0])  # Extract obtained marks
+                    total = int(score[1]) if score[1] else None  # Extract total marks if available
+
+                    total_obtained_score += obtained  # Sum up obtained marks
+
+                    # Store in "X/Y" format if total is available; otherwise, just store "X"
+                    formatted_scores.append(f"{obtained}/{total}" if total else f"{obtained}")
+
+                
+                
                 results_collection = get_collection('results_db')
                 results_collection.insert_one({
                     "results": results,
