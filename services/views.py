@@ -108,26 +108,67 @@ class ClassListCreateAPI(APIView):
         classes_collection.insert_one(data)
         return Response({"message": "Class created successfully"}, status=status.HTTP_201_CREATED)
     
+    # def delete(self, request, id):
+    #     user_id=request.headers.get('userId')
+    #     user_collection = get_collection('auth_users')
+    #     classes_collection = get_collection("classes")
+    #     user = user_collection.find_one({"_id": ObjectId(user_id)})
+    #     class_obj = classes_collection.find_one({"_id": ObjectId(id)})
+    #     class_org = class_obj.get('organization_id')
+    #     if not user:
+    #         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    #     user_org_id = user.get('organization')
+    
+    #     if user_org_id != class_org:
+    #         return Response({"error": "hii Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        
+    #     result = classes_collection.delete_one({"_id": ObjectId(id)})
+    #     if result.deleted_count == 0:
+    #         return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
+    #     return Response({"message": "Class deleted successfully"}, status=status.HTTP_200_OK)
     def delete(self, request, id):
-        user_id=request.headers.get('userId')
+        user_id = request.headers.get('userId')
         user_collection = get_collection('auth_users')
         classes_collection = get_collection("classes")
+        sections_collection = get_collection("sections")
+        subjects_collection = get_collection("subjects")
+
+        
         user = user_collection.find_one({"_id": ObjectId(user_id)})
-        class_obj = classes_collection.find_one({"_id": ObjectId(id)})
-        class_org = class_obj.get('organization_id')
         if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+       
+        class_obj = classes_collection.find_one({"_id": ObjectId(id)})
+        if not class_obj:
+            return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        class_org = class_obj.get('organization_id')
         user_org_id = user.get('organization')
-    
+
+       
         if user_org_id != class_org:
-            return Response({"error": "hii Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
+        sections = list(sections_collection.find({"class_id": id}))
+        section_ids = [str(section["_id"]) for section in sections]  
+
+     
+        subjects_collection.delete_many({"associated_section_id": {"$in": section_ids}})
+
+        
+        sections_collection.delete_many({"class_id": id})
+
+       
         result = classes_collection.delete_one({"_id": ObjectId(id)})
+        
         if result.deleted_count == 0:
             return Response({"message": "Class not found"}, status=status.HTTP_404_NOT_FOUND)
-        return Response({"message": "Class deleted successfully"}, status=status.HTTP_200_OK)
-    
-    
+
+        return Response({"message": "Class and associated sections and subjects deleted successfully"}, status=status.HTTP_200_OK)
+
+        
+        
     def put(self, request, id):
         user_id = request.headers.get('userId')
         user_collection = get_collection('auth_users')
