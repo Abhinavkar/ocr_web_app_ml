@@ -921,7 +921,7 @@ class DocumentListAPI(APIView):
                     "class_name": class_name,
                     "subject_name": subject_name,
                     "section_name": section_name,
-                    "course_pdf_url": course_pdf.get("pdf_file_path"),
+                    "course_pdf_url": course_pdf.get("pdf_file_signed_url"),
                     "question_pdf_url": None  # Initialize as None
                 }
 
@@ -939,7 +939,7 @@ class DocumentListAPI(APIView):
                 key = (class_id, subject_id, section_id)
                 if key in grouped_data:
                     # Update existing entry with question PDF URL
-                    grouped_data[key]["question_pdf_url"] = question_paper.get("question_file_url")
+                    grouped_data[key]["question_pdf_url"] = question_paper.get("question_file_signed_url")
                 else:
                     # Create new entry if no course PDF exists
                     grouped_data[key] = {
@@ -947,7 +947,7 @@ class DocumentListAPI(APIView):
                         "subject_name": subject_name,
                         "section_name": section_name,
                         "course_pdf_url": None,
-                        "question_pdf_url": question_paper.get("question_file_url")
+                        "question_pdf_url": question_paper.get("question_file_signed_url")
                     }
 
             # Convert grouped data to a list for the response
