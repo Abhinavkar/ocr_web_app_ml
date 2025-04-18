@@ -644,8 +644,6 @@ class QuestionPaperUploadSaveAPI(APIView):
 
         except Exception as e:
             return Response({"message": f"An error occurred: {str(e)}"}, status=500)
-
-
 # class AnswerUploadAPI(APIView):
         
 #         def post(self, request):
